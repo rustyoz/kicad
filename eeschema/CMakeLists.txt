@@ -167,6 +167,7 @@ set( EESCHEMA_SRCS
     sch_bus_entry.cpp
     sch_collectors.cpp
     sch_component.cpp
+    sch_eagle_plugin.cpp
     sch_field.cpp
     sch_io_mgr.cpp
     sch_item_struct.cpp
@@ -298,7 +299,7 @@ target_link_libraries( eeschema
     )
 
 # the DSO (KIFACE) housing the main eeschema code:
-add_library( eeschema_kiface MODULE
+add_library( eeschema_kiface STATIC
     ${EESCHEMA_SRCS}
     ${EESCHEMA_COMMON_SRCS}
     )
@@ -436,3 +437,4 @@ add_custom_target(
 add_dependencies( eeschema_kiface dialog_bom_cfg_lexer_source_files )
 
 add_subdirectory( plugins )
+add_subdirectory( qa )
