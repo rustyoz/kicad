@@ -48,6 +48,8 @@
 #include <pcbnew_id.h>
 #include <menus_helpers.h>
 
+#include "trackitems/trackitems.h"
+
 
 /* Handle the left button mouse click, when a tool is active
  */
@@ -284,6 +286,13 @@ void PCB_EDIT_FRAME::OnLeftClick( wxDC* aDC, const wxPoint& aPosition )
             break;
         }
 
+        GetBoard()->TrackItems()->Edittrack_Clear();
+        if( GetBoard()->TrackItems()->Teardrops()->IsEditOn() )
+            GetBoard()->TrackItems()->Teardrops()->ToggleEdit( TEARDROPS::EDIT_SIZE_WIDTH_T ); //Length too.
+        else
+        if( GetBoard()->TrackItems()->RoundedTracksCorners()->IsEditOn() )
+            GetBoard()->TrackItems()->RoundedTracksCorners()->ToggleEdit( ROUNDEDTRACKSCORNERS::EDIT_LENGTH_SET_T ); //Ratio too.
+        else
         if( (curr_item == NULL) || (curr_item->GetFlags() == 0) )
         {
             curr_item = (BOARD_ITEM*) Begin_Route( NULL, aDC );

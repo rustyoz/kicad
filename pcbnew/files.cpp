@@ -55,6 +55,7 @@
 
 #include <wx/stdpaths.h>
 
+#include "trackitems/trackitems.h"
 
 //#define     USE_INSTRUMENTATION     1
 #define     USE_INSTRUMENTATION     0
@@ -529,6 +530,7 @@ bool PCB_EDIT_FRAME::OpenProjectFiles( const std::vector<wxString>& aFileSet, in
         }
 
         SetBoard( loadedBoard );
+        GetBoard()->TrackItems()->SetEditFrame( this, m_TrackItemsMenu );
 
         // we should not ask PLUGINs to do these items:
         loadedBoard->BuildListOfNets();

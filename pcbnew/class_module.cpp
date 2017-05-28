@@ -78,12 +78,15 @@ MODULE::MODULE( BOARD* parent ) :
     m_Value = new TEXTE_MODULE( this, TEXTE_MODULE::TEXT_is_VALUE );
 
     m_3D_Drawings.clear();
+
+    m_pad_id_counter = 0; //Teardrops for.
 }
 
 
 MODULE::MODULE( const MODULE& aModule ) :
     BOARD_ITEM_CONTAINER( aModule )
 {
+    m_pad_id_counter = aModule.GetPadIDCounter();
     m_Pos = aModule.m_Pos;
     m_fpid = aModule.m_fpid;
     m_Attributs = aModule.m_Attributs;
@@ -187,12 +190,47 @@ MODULE& MODULE::operator=( const MODULE& aOther )
     m_Value->SetParent( this );
 
     // Copy auxiliary data: Pads
-    m_Pads.DeleteAll();
 
-    for( D_PAD* pad = aOther.m_Pads;  pad;  pad = pad->Next() )
+    //Pad copy for teardrops. This do not change pad addresses. Need for teardrops.
+    //Delete this module pads that do not belong to aOther, if any.
+    std::vector<D_PAD*> del_pads;
+    del_pads.clear();
+    for( D_PAD* pad_t = m_Pads;  pad_t;  pad_t = pad_t->Next() )
     {
-        Add( new D_PAD( *pad ) );
+        bool hit = false;
+        for( D_PAD* pad_s = aOther.m_Pads;  pad_s;  pad_s = pad_s->Next() )
+        {
+            if( pad_t->GetIDNumber() == pad_s->GetIDNumber() )
+            {
+                hit = true;
+                break;
+            }
+        }
+        if( !hit )
+            del_pads.push_back( pad_t );
     }
+    for( uint n = 0; n < del_pads.size(); ++n )
+        m_Pads.Remove(del_pads.at(n));
+    
+    //Copy aOther pads data to this module pads and create pads that are not in this module, if any..
+    for( D_PAD* pad_s = aOther.m_Pads;  pad_s;  pad_s = pad_s->Next() )
+    {
+        bool hit = false;
+        for( D_PAD* pad_t = m_Pads;  pad_t;  pad_t = pad_t->Next() )
+        {
+            if( pad_t->GetIDNumber() == pad_s->GetIDNumber() )
+            {
+                hit = true;
+                *pad_t = *pad_s;
+                break;
+            }
+        }
+        if( !hit )
+        {
+            Add( new D_PAD( *pad_s ) );
+        }
+    }
+    //Pads copy teardrops for END.
 
     // Copy auxiliary data: Drawings
     m_Drawings.DeleteAll();

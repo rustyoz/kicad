@@ -50,6 +50,9 @@
 #include <pcbnew.h>
 #include <protos.h>
 
+#include "trackitems/trackitems.h"
+#include "trackitems/roundedtrackscorner.h"
+
 #define BLOCK_OUTLINE_COLOR YELLOW
 
 /**
@@ -464,6 +467,8 @@ static void drawPickedItems( EDA_DRAW_PANEL* aPanel, wxDC* aDC, wxPoint aOffset 
         case PCB_TARGET_T:
         case PCB_DIMENSION_T:    // Currently markers are not affected by block commands
         case PCB_MARKER_T:
+        case PCB_TEARDROP_T:
+        case PCB_ROUNDEDTRACKSCORNER_T:
             item->Draw( aPanel, aDC, GR_XOR, aOffset );
             break;
 
@@ -558,6 +563,8 @@ void PCB_EDIT_FRAME::Block_Delete()
         case PCB_VIA_T:           // a via (like track segment on a copper layer)
         case PCB_DIMENSION_T:     // a dimension (graphic item)
         case PCB_TARGET_T:        // a target (graphic item)
+        case PCB_TEARDROP_T:
+        case PCB_ROUNDEDTRACKSCORNER_T:
             item->UnLink();
             break;
 
@@ -595,6 +602,9 @@ void PCB_EDIT_FRAME::Block_Rotate()
     PICKED_ITEMS_LIST* itemsList = &GetScreen()->m_BlockLocate.GetItems();
     itemsList->m_Status = UR_CHANGED;
 
+    m_Pcb->TrackItems()->Teardrops()->UpdateListClear();
+    m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+
     for( unsigned ii = 0; ii < itemsList->GetCount(); ii++ )
     {
         BOARD_ITEM* item = (BOARD_ITEM*) itemsList->GetPickedItem( ii );
@@ -627,6 +637,14 @@ void PCB_EDIT_FRAME::Block_Rotate()
             ii--;
             break;
 
+        case PCB_TEARDROP_T:
+            m_Pcb->TrackItems()->Teardrops()->UpdateListAdd( static_cast<TrackNodeItem::TEARDROP*>(item) );
+            break;
+
+        case PCB_ROUNDEDTRACKSCORNER_T:
+            m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( static_cast<TRACK*>(item) );
+            break;
+
         default:
             wxMessageBox( wxT( "PCB_EDIT_FRAME::Block_Rotate( ) error: unexpected type" ) );
             break;
@@ -644,6 +662,9 @@ void PCB_EDIT_FRAME::Block_Rotate()
         item->Rotate( centre, rotAngle );
     }
 
+    m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo();
+    m_Pcb->TrackItems()->Teardrops()->UpdateListDo();
+    
     Compile_Ratsnest( NULL, true );
     m_canvas->Refresh( true );
 }
@@ -661,6 +682,9 @@ void PCB_EDIT_FRAME::Block_Flip()
 
     center = GetScreen()->m_BlockLocate.Centre();
 
+    m_Pcb->TrackItems()->Teardrops()->UpdateListClear();
+    m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    
     for( unsigned ii = 0; ii < itemsList->GetCount(); ii++ )
     {
         BOARD_ITEM* item = (BOARD_ITEM*) itemsList->GetPickedItem( ii );
@@ -694,12 +718,22 @@ void PCB_EDIT_FRAME::Block_Flip()
             ii--;
             break;
 
+        case PCB_TEARDROP_T:
+            m_Pcb->TrackItems()->Teardrops()->UpdateListAdd( static_cast<TrackNodeItem::TEARDROP*>(item) );
+            break;
+
+        case PCB_ROUNDEDTRACKSCORNER_T:
+            m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( static_cast<TRACK*>(item) );
+            break;
 
         default:
             wxMessageBox( wxT( "PCB_EDIT_FRAME::Block_Flip( ) error: unexpected type" ) );
             break;
         }
     }
+
+    m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo();
+    m_Pcb->TrackItems()->Teardrops()->UpdateListDo();
 
     SaveCopyInUndoList( *itemsList, UR_FLIPPED, center );
     Compile_Ratsnest( NULL, true );
@@ -716,6 +750,9 @@ void PCB_EDIT_FRAME::Block_Move()
     PICKED_ITEMS_LIST* itemsList = &GetScreen()->m_BlockLocate.GetItems();
     itemsList->m_Status = UR_MOVED;
 
+    m_Pcb->TrackItems()->Teardrops()->UpdateListClear();
+    m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    
     for( unsigned ii = 0; ii < itemsList->GetCount(); ii++ )
     {
         BOARD_ITEM* item = (BOARD_ITEM*) itemsList->GetPickedItem( ii );
@@ -749,11 +786,22 @@ void PCB_EDIT_FRAME::Block_Move()
             ii--;
             break;
 
+        case PCB_TEARDROP_T:
+            m_Pcb->TrackItems()->Teardrops()->UpdateListAdd( static_cast<TrackNodeItem::TEARDROP*>(item) );
+            break;
+
+        case PCB_ROUNDEDTRACKSCORNER_T:
+            m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( static_cast<TRACK*>(item) );
+            break;
+ 
         default:
             wxMessageBox( wxT( "PCB_EDIT_FRAME::Block_Move( ) error: unexpected type" ) );
             break;
         }
     }
+
+    m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo();
+    m_Pcb->TrackItems()->Teardrops()->UpdateListDo();
 
     SaveCopyInUndoList( *itemsList, UR_MOVED, MoveVector );
 
@@ -776,9 +824,18 @@ void PCB_EDIT_FRAME::Block_Duplicate( bool aIncrement )
     ITEM_PICKER picker( NULL, UR_NEW );
     BOARD_ITEM* newitem;
 
+    m_Pcb->TrackItems()->Teardrops()->UpdateListClear();
+    m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+
     for( unsigned ii = 0; ii < itemsList->GetCount(); ii++ )
     {
         BOARD_ITEM* item = (BOARD_ITEM*) itemsList->GetPickedItem( ii );
+
+        if( item->Type() == PCB_ROUNDEDTRACKSCORNER_T )
+        {
+            m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( static_cast<TRACK*>(item) );
+            continue;
+        }
 
         newitem = (BOARD_ITEM*)item->Clone();
 
@@ -790,10 +847,19 @@ void PCB_EDIT_FRAME::Block_Duplicate( bool aIncrement )
         if( newitem )
         {
             newitem->Move( MoveVector );
+            
+            if( newitem->Type() == PCB_TEARDROP_T )
+                m_Pcb->TrackItems()->Teardrops()->UpdateListAdd( static_cast<TrackNodeItem::TEARDROP*>(newitem) );
+            if(dynamic_cast<ROUNDEDCORNERTRACK*>(newitem))
+                dynamic_cast<ROUNDEDCORNERTRACK*>(newitem)->ResetVisibleEndpoints();
+
             picker.SetItem ( newitem );
             newList.PushItem( picker );
         }
     }
+
+    m_Pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo_BlockDuplicate( MoveVector, &newList );
+    m_Pcb->TrackItems()->Teardrops()->UpdateListDo_BlockDuplicate( MoveVector, &newList );
 
     if( newList.GetCount() )
         SaveCopyInUndoList( newList, UR_NEW );

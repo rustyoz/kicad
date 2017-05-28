@@ -59,6 +59,10 @@ class NETLIST;
 class REPORTER;
 class RN_DATA;
 class SHAPE_POLY_SET;
+class TEARDROPS;
+class VIASTITCHING;
+class ROUNDEDTRACKSCORNERS;
+class TRACKITEMS;
 
 
 /**
@@ -226,7 +230,15 @@ private:
         return *this;       // just to mute warning
     }
 
+    VIASTITCHING* m_ViaStitching{nullptr};
+    TRACKITEMS* m_TrackItems{nullptr};
+    
+
 public:
+
+    VIASTITCHING* ViaStitching(void) const { return m_ViaStitching; }
+    TRACKITEMS* TrackItems(void) const { return m_TrackItems; }
+
     static inline bool ClassOf( const EDA_ITEM* aItem )
     {
         return aItem && PCB_T == aItem->Type();

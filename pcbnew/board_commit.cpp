@@ -32,6 +32,8 @@
 #include <tools/pcb_tool.h>
 
 #include <functional>
+#include "trackitems/trackitems.h"
+
 using namespace std::placeholders;
 
 BOARD_COMMIT::BOARD_COMMIT( PCB_TOOL* aTool )
@@ -65,6 +67,9 @@ void BOARD_COMMIT::Push( const wxString& aMessage, bool aCreateUndoEntry )
 
     if( Empty() )
         return;
+
+    frame->GetBoard()->TrackItems()->Teardrops()->GalCommitPushPrepare();
+    frame->GetBoard()->TrackItems()->RoundedTracksCorners()->GalCommitPushPrepare();
 
     for( COMMIT_LINE& ent : m_changes )
     {
@@ -136,6 +141,9 @@ void BOARD_COMMIT::Push( const wxString& aMessage, bool aCreateUndoEntry )
                 }
 
                 view->Add( boardItem );
+
+                frame->GetBoard()->TrackItems()->Teardrops()->GalCommitPushAdd( boardItem, &undoList );
+                frame->GetBoard()->TrackItems()->RoundedTracksCorners()->GalCommitPushAdd( boardItem, &undoList );
                 break;
             }
 
@@ -143,6 +151,8 @@ void BOARD_COMMIT::Push( const wxString& aMessage, bool aCreateUndoEntry )
             {
                 if( !m_editModules && aCreateUndoEntry )
                 {
+                    frame->GetBoard()->TrackItems()->Teardrops()->GalCommitPushRemove( boardItem, &undoList );
+                    frame->GetBoard()->TrackItems()->RoundedTracksCorners()->GalCommitPushRemove( boardItem, &undoList );
                     undoList.PushItem( ITEM_PICKER( boardItem, UR_DELETED ) );
                 }
 
@@ -211,6 +221,8 @@ void BOARD_COMMIT::Push( const wxString& aMessage, bool aCreateUndoEntry )
                 case PCB_MARKER_T:              // a marker used to show something
                 case PCB_ZONE_T:                // SEG_ZONE items are now deprecated
                 case PCB_ZONE_AREA_T:
+                case PCB_TEARDROP_T:
+                case PCB_ROUNDEDTRACKSCORNER_T:
                     view->Remove( boardItem );
 
                     if( !( changeFlags & CHT_DONE ) )
@@ -271,6 +283,9 @@ void BOARD_COMMIT::Push( const wxString& aMessage, bool aCreateUndoEntry )
                 break;
         }
     }
+
+    frame->GetBoard()->TrackItems()->RoundedTracksCorners()->GalCommitPushFinish( &undoList );
+    frame->GetBoard()->TrackItems()->Teardrops()->GalCommitPushFinish( &undoList );
 
     if( !m_editModules && aCreateUndoEntry )
         frame->SaveCopyInUndoList( undoList, UR_UNSPECIFIED );

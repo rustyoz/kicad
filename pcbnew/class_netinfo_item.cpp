@@ -44,6 +44,8 @@
 #include <class_module.h>
 #include <class_track.h>
 
+#include "trackitems/roundedcornertrack.h"
+#include "trackitems/roundedtrackscorner.h"
 
 /*********************************************************/
 /* class NETINFO_ITEM: handle data relative to a given net */
@@ -126,8 +128,19 @@ void NETINFO_ITEM::GetMsgPanelInfo( std::vector< MSG_PANEL_ITEM >& aList )
         if( track->Type() == PCB_TRACE_T )
         {
             if( track->GetNetCode() == GetNet() )
-                lengthnet += track->GetLength();
+            {
+                if(dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(track)))
+                    lengthnet += dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(track))->GetLengthVisible();
+                else
+                    lengthnet += track->GetLength();
+            }
+
         }
+        
+        if( track->Type() == PCB_ROUNDEDTRACKSCORNER_T )
+            if( track->GetNetCode() == GetNet() )
+                lengthnet += dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(const_cast<TRACK*>(track))->GetLengthVisible();
+
     }
 
     txt.Printf( wxT( "%d" ), count );

@@ -65,6 +65,9 @@ struct LAYER;
  */
 class PCB_PARSER : public PCB_LEXER
 {
+    friend class TEARDROPS;
+    friend class ROUNDEDTRACKSCORNERS;
+    
     typedef boost::unordered_map< std::string, PCB_LAYER_ID >   LAYER_ID_MAP;
     typedef boost::unordered_map< std::string, LSET >       LSET_MAP;
 

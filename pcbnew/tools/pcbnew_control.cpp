@@ -53,6 +53,7 @@
 #include <board_commit.h>
 
 #include <functional>
+#include <trackitems/tracknodeitem.h>
 using namespace std::placeholders;
 
 
@@ -263,7 +264,7 @@ int PCBNEW_CONTROL::TrackDisplayMode( const TOOL_EVENT& aEvent )
 
     for( TRACK* track = getModel<BOARD>()->m_Track; track; track = track->Next() )
     {
-        if( track->Type() == PCB_TRACE_T )
+        if( track->Type() == PCB_TRACE_T || dynamic_cast<TrackNodeItem::TRACKNODEITEM*>(track))
             getView()->Update( track, KIGFX::GEOMETRY );
     }
 

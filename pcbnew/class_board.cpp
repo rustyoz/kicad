@@ -59,6 +59,10 @@
 #include <class_mire.h>
 #include <class_dimension.h>
 
+#include "trackitems/viastitching.h"
+#include "trackitems/trackitems.h"
+#include "trackitems/roundedcornertrack.h"
+#include "trackitems/teardrop.h"
 
 /* This is an odd place for this, but CvPcb won't link if it is
  *  in class_board_item.cpp like I first tried it.
@@ -107,6 +111,9 @@ BOARD::BOARD() :
 
     // Initialize ratsnest
     m_ratsnest = new RN_DATA( this );
+
+    m_ViaStitching = new VIASTITCHING( this );
+    m_TrackItems = new TRACKITEMS( this );
 }
 
 
@@ -128,6 +135,11 @@ BOARD::~BOARD()
 
     delete m_CurrentZoneContour;
     m_CurrentZoneContour = NULL;
+
+    delete m_ViaStitching;
+    m_ViaStitching = nullptr;
+    delete m_TrackItems;
+    m_TrackItems = nullptr;
 }
 
 
@@ -886,6 +898,8 @@ void BOARD::Add( BOARD_ITEM* aBoardItem, ADD_MODE aMode )
 
     case PCB_TRACE_T:
     case PCB_VIA_T:
+    case PCB_TEARDROP_T:
+    case PCB_ROUNDEDTRACKSCORNER_T:
         if( aMode == ADD_APPEND )
         {
             m_Track.PushBack( (TRACK*) aBoardItem );
@@ -992,6 +1006,8 @@ void BOARD::Remove( BOARD_ITEM* aBoardItem )
 
     case PCB_TRACE_T:
     case PCB_VIA_T:
+    case PCB_TEARDROP_T:
+    case PCB_ROUNDEDTRACKSCORNER_T:
         m_Track.Remove( (TRACK*) aBoardItem );
         break;
 
@@ -1778,6 +1794,9 @@ TRACK* BOARD::GetVisibleTrack( TRACK* aStartingTrace, const wxPoint& aPosition,
     {
         PCB_LAYER_ID layer = track->GetLayer();
 
+        if( track->Type() == PCB_TEARDROP_T )
+            continue;
+
         if( track->GetState( BUSY | IS_DELETED ) )
             continue;
 
@@ -2251,6 +2270,14 @@ TRACK* BOARD::CreateLockPoint( wxPoint& aPosition, TRACK* aSegment, PICKED_ITEMS
         return aSegment;
     }
 
+    if( aSegment->Type() == PCB_ROUNDEDTRACKSCORNER_T )
+        return nullptr;
+    
+    GetBoard()->TrackItems()->Teardrops()->ToMemory( aSegment );
+    GetBoard()->TrackItems()->Teardrops()->Remove( aSegment, aList, true );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->ToMemory( aSegment );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Remove( aSegment, aList, true );
+
     // Calculation coordinate of intermediate point relative to the start point of aSegment
      wxPoint delta = aSegment->GetEnd() - aSegment->GetStart();
 
@@ -2269,7 +2296,12 @@ TRACK* BOARD::CreateLockPoint( wxPoint& aPosition, TRACK* aSegment, PICKED_ITEMS
      */
     lockPoint += aSegment->GetStart();
 
-    TRACK* newTrack = (TRACK*)aSegment->Clone();
+    TRACK* newTrack = nullptr;
+    if(dynamic_cast<ROUNDEDCORNERTRACK*>(aSegment))
+        newTrack = static_cast<ROUNDEDCORNERTRACK*>(aSegment->Clone());
+    else
+        newTrack = (TRACK*)aSegment->Clone();
+
     // The new segment begins at the new point,
     newTrack->SetStart(lockPoint);
     newTrack->start = aSegment;
@@ -2308,6 +2340,14 @@ TRACK* BOARD::CreateLockPoint( wxPoint& aPosition, TRACK* aSegment, PICKED_ITEMS
     }
 
     aPosition = lockPoint;
+    
+    GetBoard()->TrackItems()->Teardrops()->FromMemory( newTrack, aList );
+    GetBoard()->TrackItems()->Teardrops()->FromMemory( aSegment, aList );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->FromMemory( newTrack, aList );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->FromMemory( aSegment, aList );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Update( newTrack );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Update( aSegment );
+
     return newTrack;
 }
 

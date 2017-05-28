@@ -31,6 +31,8 @@
 
 #include <dialogs/dialog_create_array.h>
 
+#include "drc_stuff.h"
+#include "trackitems/viastitching.h"
 
 void ARRAY_CREATOR::Invoke()
 {
@@ -89,6 +91,10 @@ void ARRAY_CREATOR::Invoke()
             if( new_item )
             {
                 array_opts->TransformItem( ptN, new_item, rotPoint );
+
+                if( getBoard()->ViaStitching()->DestroyConflictingThermalVia( new_item, &m_parent ) )
+                    continue;
+
                 prePushAction( new_item );
                 commit.Add( new_item );
                 postPushAction( new_item );

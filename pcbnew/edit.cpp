@@ -60,6 +60,10 @@
 #include <tool/tool_manager.h>
 #include <tools/pcb_actions.h>
 
+#include "trackitems/viastitching.h"
+#include "trackitems/trackitems.h"
+
+
 // Handles the selection of command events.
 void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
 {
@@ -154,6 +158,141 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
     case ID_POPUP_PCB_MOVE_MODULE_REQUEST:
     case ID_POPUP_PCB_MOVE_TEXTMODULE_REQUEST:
     case ID_POPUP_PCB_MOVE_MIRE_REQUEST:
+    case ID_POPUP_PCB_DELETE_MARKER:
+    case ID_POPUP_PCB_PLACE_ZONE_THROUGH_VIA:
+    case ID_POPUP_PCB_PLACE_ZONE_BLIND_BURIED_VIA:
+    case ID_POPUP_PCB_SEL_LAYERS_AND_PLACE_ZONE_BLIND_BURIED_VIA:
+    case ID_POPUP_PCB_SEL_LAYER_AND_PLACE_ZONE_THROUGH_VIA:
+    //Teardrops
+    case ID_POPUP_PCB_TEARDROP_COPYCURRENT:
+    case ID_POPUP_PCB_TEARDROP_LOCK_TOGGLE:
+    case ID_POPUP_PCB_TEARDROPS_LOCK_ALL_SAME:
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_ALL_SAME:
+    case ID_POPUP_PCB_TEARDROPS_LOCK_MODULES_ALL:
+    case ID_POPUP_PCB_TEARDROPS_LOCK_VIAS_ALL:
+    case ID_POPUP_PCB_TJUNCTIONS_LOCK_ALL:
+    case ID_POPUP_PCB_JUNCTIONS_LOCK_ALL:
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_MODULES_ALL:
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_VIAS_ALL:
+    case ID_POPUP_PCB_TJUNCTIONS_UNLOCK_ALL:
+    case ID_POPUP_PCB_JUNCTIONS_UNLOCK_ALL:
+    case ID_POPUP_PCB_TEARDROPS_LOCK_MODULE:
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_MODULE:
+    case ID_POPUP_PCB_TEARDROPS_LOCK:
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK:
+    case ID_POPUP_PCB_TEARDROP_EDIT_LENGTH:
+    case ID_POPUP_PCB_TEARDROP_EDIT_WIDTH:
+    case ID_POPUP_PCB_TEARDROP_SET_DEFAULT_PARAMS:
+    case ID_POPUP_PCB_TEARDROP_SELECT_TEARDROP:
+    case ID_POPUP_PCB_TEARDROP_SELECT_FILLET:
+    case ID_POPUP_PCB_TEARDROP_SELECT_SUBLAND:
+    case ID_POPUP_PCB_TEARDROP_SELECT_ZERO:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 1:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 2:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 3:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 4:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 5:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 6:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 7:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 8:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_LAST:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 1:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 2:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 3:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 4:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 5:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 6:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 7:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 8:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_LAST:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 1:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 2:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 3:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 4:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 5:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 6:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 7:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 8:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_LAST:
+    case ID_POPUP_PCB_TEARDROP_PLACE:
+    case ID_POPUP_PCB_TEARDROPS_PLACE:
+    case ID_POPUP_PCB_TEARDROP_CHANGE:
+    case ID_POPUP_PCB_TEARDROPS_CHANGE:
+    case ID_POPUP_PCB_TEARDROP_DELETE:
+    case ID_POPUP_PCB_TEARDROPS_DELETE:
+    case ID_POPUP_PCB_TEARDROPS_PLACE_MODULE:
+    case ID_POPUP_PCB_TEARDROPS_CHANGE_MODULE:
+    case ID_POPUP_PCB_TEARDROPS_DELETE_MODULE:
+    case ID_POPUP_PCB_TEARDROPS_PLACE_VIAS_ALL:
+    case ID_POPUP_PCB_TEARDROPS_CHANGE_VIAS_ALL:
+    case ID_POPUP_PCB_TEARDROPS_DELETE_VIAS_ALL:
+    case ID_POPUP_PCB_TEARDROPS_PLACE_MODULES_ALL:
+    case ID_POPUP_PCB_TEARDROPS_CHANGE_MODULES_ALL:
+    case ID_POPUP_PCB_TEARDROPS_DELETE_MODULES_ALL:
+    case ID_POPUP_PCB_TEARDROPS_PLACE_NET:
+    case ID_POPUP_PCB_TEARDROPS_CHANGE_NET:
+    case ID_POPUP_PCB_TEARDROPS_DELETE_NET:
+    case ID_POPUP_PCB_TJUNCTIONS_PLACE_ALL:
+    case ID_POPUP_PCB_TJUNCTIONS_CHANGE_ALL:
+    case ID_POPUP_PCB_TJUNCTIONS_DELETE_ALL:
+    case ID_POPUP_PCB_TJUNCTIONS_MARK_NOT_T:
+    case ID_POPUP_PCB_JUNCTIONS_PLACE_ALL:
+    case ID_POPUP_PCB_JUNCTIONS_CHANGE_ALL:
+    case ID_POPUP_PCB_JUNCTIONS_DELETE_ALL:
+    case ID_POPUP_PCB_TJUNCTIONS_PLACE_NET:
+    case ID_POPUP_PCB_TJUNCTIONS_CHANGE_NET:
+    case ID_POPUP_PCB_TJUNCTIONS_DELETE_NET:
+    case ID_POPUP_PCB_JUNCTIONS_PLACE_NET:
+    case ID_POPUP_PCB_JUNCTIONS_CHANGE_NET:
+    case ID_POPUP_PCB_JUNCTIONS_DELETE_NET:
+    case ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_MODULES:
+    case ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_TEARDROPS_VIAS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_TJUNCTIONS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_JUNCTIONS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_DIFF_MODULES:
+    case ID_POPUP_PCB_TEARDROPS_MARK_DIFF_TEARDROPS_VIAS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_DIFF_TJUNCTIONS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_DIFF_JUNCTIONS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_CURR_MODULES:
+    case ID_POPUP_PCB_TEARDROPS_MARK_CURR_TEARDROPS_VIAS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_CURR_TJUNCTIONS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_CURR_JUNCTIONS:
+    case ID_POPUP_PCB_VIA_PICK_SIZE:
+    case ID_POPUP_PCB_TRACK_PICK_WIDTH:
+    case ID_POPUP_PCB_TRACKS_MARK_SHARP_ANGLES:
+        //rounded corners
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_PLACE:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_DELETE:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_CHANGE:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_COPYCURRENT:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 1:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 2:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 3:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 4:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 5:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 6:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 7:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 8:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 9:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_LAST:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 1:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 2:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 3:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 4:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 5:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 6:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 7:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 8:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 9:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_LAST:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SET_DEFAULT_PARAMS:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_EDIT_LENGTH_SET:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_EDIT_LENGTH_RATIO:
         break;
 
     case ID_POPUP_CANCEL_CURRENT_COMMAND:
@@ -388,10 +527,16 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
         if( m_canvas->IsMouseCaptured() )
             m_canvas->CallMouseCapture( &dc, wxDefaultPosition, false );
 
+        if(TrackNodeItem::ROUNDEDTRACKSCORNER* cor = GetBoard()->TrackItems()->RoundedTracksCorners()->GetEditCorner())
+            cor->Draw( m_canvas, &dc, GR_XOR );
+
         g_Alternate_Track_Posture = !g_Alternate_Track_Posture;
 
         if( m_canvas->IsMouseCaptured() )
             m_canvas->CallMouseCapture( &dc, wxDefaultPosition, false );
+
+        if(TrackNodeItem::ROUNDEDTRACKSCORNER* cor = GetBoard()->TrackItems()->RoundedTracksCorners()->GetEditCorner())
+            cor->Draw( m_canvas, &dc, GR_XOR );
 
         break;
 
@@ -784,7 +929,16 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
 
         // This is a simple rotation, no other editing in progress
         if( !GetCurItem()->IsMoving() )
-            SaveCopyInUndoList( GetCurItem(), UR_CHANGED, ((MODULE*)GetCurItem())->GetPosition() );
+        {
+            PICKED_ITEMS_LIST pickedItems;
+            ITEM_PICKER       picker( NULL, UR_CHANGED );
+            //Delete teardrops
+            GetBoard()->TrackItems()->Teardrops()->Remove( static_cast<MODULE*>(GetCurItem()), &pickedItems, true );
+            picker.SetItem( GetCurItem() );
+            pickedItems.PushItem( picker );
+            SaveCopyInUndoList( pickedItems, UR_CHANGED, 
+                                static_cast<MODULE*>(GetCurItem())->GetPosition() );
+        }
 
         Rotate_Module( &dc, (MODULE*) GetCurItem(), m_rotationAngle, true );
         break;
@@ -812,7 +966,16 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
 
         // This is a simple rotation, no other editing in progress
         if( !GetCurItem()->IsMoving() )
-            SaveCopyInUndoList( GetCurItem(), UR_CHANGED, ((MODULE*)GetCurItem())->GetPosition() );
+        {
+            PICKED_ITEMS_LIST pickedItems;
+            ITEM_PICKER       picker( NULL, UR_CHANGED );
+            //Delete teardrops
+            GetBoard()->TrackItems()->Teardrops()->Remove( static_cast<MODULE*>(GetCurItem()), &pickedItems, true );
+            picker.SetItem( GetCurItem() );
+            pickedItems.PushItem( picker );
+            SaveCopyInUndoList( pickedItems, UR_CHANGED, 
+                                static_cast<MODULE*>(GetCurItem())->GetPosition() );
+        }
 
         Rotate_Module( &dc, (MODULE*) GetCurItem(), -m_rotationAngle, true );
         break;
@@ -840,7 +1003,16 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
 
         // This is a simple flip, no other editing in progress
         if( !GetCurItem()->IsMoving() )
-            SaveCopyInUndoList( GetCurItem(), UR_FLIPPED, ((MODULE*)GetCurItem())->GetPosition() );
+        {
+            PICKED_ITEMS_LIST pickedItems;
+            ITEM_PICKER       picker( NULL, UR_FLIPPED );
+            //Delete teardrops
+            GetBoard()->TrackItems()->Teardrops()->Remove( static_cast<MODULE*>(GetCurItem()), &pickedItems, true );
+            picker.SetItem( GetCurItem() );
+            pickedItems.PushItem( picker );
+            SaveCopyInUndoList( pickedItems, UR_FLIPPED, 
+                                static_cast<MODULE*>(GetCurItem())->GetPosition() );
+        }
 
         Change_Side_Module( (MODULE*) GetCurItem(), &dc );
         break;
@@ -935,6 +1107,7 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
 
     case ID_POPUP_PCB_EDIT_PAD:
         InstallPadOptionsFrame( (D_PAD*) GetCurItem() );
+        GetBoard()->TrackItems()->Teardrops()->Update( static_cast<D_PAD*>(GetCurItem()) );
         m_canvas->MoveCursorToCrossHair();
         break;
 
@@ -955,8 +1128,25 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
         break;
 
     case ID_POPUP_PCB_DELETE_PAD:
-        SaveCopyInUndoList( GetCurItem()->GetParent(), UR_CHANGED );
+    {
+        PICKED_ITEMS_LIST pickedItems;
+        ITEM_PICKER       picker( NULL, UR_CHANGED );
+        D_PAD* pad_delete = static_cast<D_PAD*>(GetCurItem());
+        D_PAD pad_data = *pad_delete;
+        GetBoard()->TrackItems()->Teardrops()->Remove( pad_delete, &pickedItems, true );
+        picker.SetItem( GetCurItem()->GetParent() );
+        pickedItems.PushItem( picker );
+        SaveCopyInUndoList( pickedItems, UR_CHANGED );
         DeletePad( (D_PAD*) GetCurItem() );
+        
+        D_PAD* still_pad = GetBoard()->GetPadFast( pad_data.GetPosition(), pad_data.GetLayerSet() );
+        if( still_pad == pad_delete )
+        {
+            GetBoard()->PadDelete( pad_delete ); //Delete pad to undo deletion.
+            wxCommandEvent e = wxID_UNDO;
+            RestoreCopyFromUndoList( e );
+        }
+    }
         SetCurItem( NULL );
         m_canvas->MoveCursorToCrossHair();
         break;
@@ -1203,6 +1393,13 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
 
             TRACK*  newtrack = GetBoard()->CreateLockPoint( pos, track, &itemsListPicker );
 
+            if(GetBoard()->TrackItems()->RoundedTracksCorners()->IsOn())
+            {
+                GetBoard()->TrackItems()->RoundedTracksCorners()->Add( newtrack, pos, &itemsListPicker );//New node
+                GetBoard()->TrackItems()->RoundedTracksCorners()->Add( track, pos, &itemsListPicker );//or previous one
+            }
+            OnModify();
+
             SaveCopyInUndoList( itemsListPicker, UR_UNSPECIFIED );
             track->Draw( m_canvas, &dc, GR_XOR );
             newtrack->Draw( m_canvas, &dc, GR_XOR );
@@ -1257,6 +1454,659 @@ void PCB_EDIT_FRAME::Process_Special_Functions( wxCommandEvent& event )
         InvokeDXFDialogBoardImport( this );
         m_canvas->Refresh();
         break;
+
+    case ID_POPUP_PCB_GOTO_NEXT_MARKER:
+        if( !GetBoard()->m_markers.empty() )
+        {
+            uint index = 0;
+            if( GetCurItem() && GetCurItem()->Type() == PCB_MARKER_T )
+            {
+                for( MARKER_PCB* curma : GetBoard()->m_markers ) 
+                {
+                    index++;
+                    if( static_cast<MARKER_PCB*>(GetCurItem()) == curma )
+                        break;
+                }
+                        
+            }
+            
+            if( index >= GetBoard()->m_markers.size() )
+                index = 0;
+
+            MARKER_PCB* mark = GetBoard()->GetMARKER( index );
+            if( mark )
+            {
+                CursorGoto( mark->GetPosition() );
+                SetCurItem( mark );
+            }
+        }
+
+        break;
+
+    //Via stitching.
+    case ID_POPUP_PCB_PLACE_ZONE_THROUGH_VIA:
+    case ID_POPUP_PCB_PLACE_ZONE_BLIND_BURIED_VIA:
+    case ID_POPUP_PCB_SEL_LAYERS_AND_PLACE_ZONE_BLIND_BURIED_VIA:
+    case ID_POPUP_PCB_SEL_LAYER_AND_PLACE_ZONE_THROUGH_VIA:
+        GetBoard()->ViaStitching()->AddThermalVia( this, id ); 
+        break;
+
+    case ID_POPUP_PCB_CREATE_VIA_ARRAY:
+        if( GetCurItem()->Type() == PCB_VIA_T)
+        {
+            const VIA* via = static_cast<const VIA*>(GetCurItem());
+            if(dynamic_cast<const VIA*>(via)->GetThermalCode())
+            {
+                GetBoard()->ViaStitching()->AddViaArrayPrepare( this, via ); 
+                createArray(); 
+                GetBoard()->ViaStitching()->AddViaArrayFinnish(); 
+            }
+        }
+        break;
+            
+    //Teardrops
+    case ID_POPUP_PCB_TEARDROP_COPYCURRENT:
+        if( GetCurItem() )
+            GetBoard()->TrackItems()->Teardrops()->CopyCurrentParams( static_cast<TRACK*>(GetCurItem()), 
+                                                        GetCrossHairPosition() 
+                                                      );
+        break;
+
+    case ID_POPUP_PCB_TEARDROP_LOCK_TOGGLE:
+        if( GetCurItem() )
+        {
+            GetBoard()->TrackItems()->Teardrops()->LockToggle( static_cast<TRACK*>(GetCurItem()), 
+                                                 GetCrossHairPosition() 
+                                               );
+            OnModify();
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_LOCK_ALL_SAME:
+        if( GetCurItem() )
+        {
+            GetBoard()->TrackItems()->Teardrops()->Lock( static_cast<TRACK*>(GetCurItem()), 
+                                           GetCrossHairPosition(),
+                                           &GetBoard()->m_Track
+                                         );
+            OnModify();
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_ALL_SAME:
+        if( GetCurItem() )
+        {
+            GetBoard()->TrackItems()->Teardrops()->Unlock( static_cast<TRACK*>(GetCurItem()), 
+                                             GetCrossHairPosition(),
+                                             &GetBoard()->m_Track
+                                           );
+            OnModify();
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_LOCK_NET:
+        if( GetCurItem() )
+        {
+            if( GetCurItem()->Type() == PCB_TRACE_T )
+            {
+                GetBoard()->TrackItems()->Teardrops()->Lock(static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                                            static_cast<TRACK*>(GetCurItem()));
+                OnModify();
+            }
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_NET:
+        if( GetCurItem() )
+        {
+            if( GetCurItem()->Type() == PCB_TRACE_T )
+            {
+                GetBoard()->TrackItems()->Teardrops()->Unlock(static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                                              static_cast<TRACK*>(GetCurItem()));
+                OnModify();
+            }
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_LOCK_MODULES_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Lock(&GetBoard()->m_Modules);
+        OnModify();
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_MODULES_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Unlock(&GetBoard()->m_Modules);
+        OnModify();
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_LOCK_VIAS_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Lock( &GetBoard()->m_Track, TEARDROPS::ONLY_TEARDROPS_T );
+        OnModify();
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_VIAS_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Unlock( &GetBoard()->m_Track, TEARDROPS::ONLY_TEARDROPS_T );
+        OnModify();
+        break;
+        
+    case  ID_POPUP_PCB_TJUNCTIONS_LOCK_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Lock(&GetBoard()->m_Track, TEARDROPS::ONLY_TJUNCTIONS_T);
+        OnModify();
+        break;
+        
+    case  ID_POPUP_PCB_TJUNCTIONS_UNLOCK_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Unlock(&GetBoard()->m_Track, TEARDROPS::ONLY_TJUNCTIONS_T);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_JUNCTIONS_LOCK_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Lock(&GetBoard()->m_Track, TEARDROPS::ONLY_JUNCTIONS_T);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_JUNCTIONS_UNLOCK_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Unlock(&GetBoard()->m_Track, TEARDROPS::ONLY_JUNCTIONS_T);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_LOCK_MODULE:
+        if( GetCurItem() )
+        {
+            if( GetCurItem()->Type() != PCB_MODULE_T )
+                SetCurItem( GetCurItem()->GetParent() );
+            if( GetCurItem() )
+                if( GetCurItem()->Type() == PCB_MODULE_T )
+                {
+                    GetBoard()->TrackItems()->Teardrops()->Lock( static_cast<MODULE*>(GetCurItem()) );
+                    OnModify();
+                }
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK_MODULE:
+        if( GetCurItem() )
+        {
+            if( GetCurItem()->Type() != PCB_MODULE_T )
+                SetCurItem( GetCurItem()->GetParent() );
+            if( GetCurItem() )
+                if( GetCurItem()->Type() == PCB_MODULE_T )
+                {
+                    GetBoard()->TrackItems()->Teardrops()->Unlock( static_cast<MODULE*>(GetCurItem()) );
+                    OnModify();
+                }
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_LOCK:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Lock( static_cast<BOARD_CONNECTED_ITEM*>(GetCurItem()) );
+            OnModify();
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_UNLOCK:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Unlock( static_cast<BOARD_CONNECTED_ITEM*>(GetCurItem()) );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROP_EDIT_LENGTH:
+        GetBoard()->TrackItems()->Teardrops()->ToggleEdit( TEARDROPS::EDIT_SIZE_LENGTH_T );
+        break;
+
+    case ID_POPUP_PCB_TEARDROP_EDIT_WIDTH:
+        GetBoard()->TrackItems()->Teardrops()->ToggleEdit( TEARDROPS::EDIT_SIZE_WIDTH_T );
+        break;
+
+    case ID_POPUP_PCB_TEARDROP_SET_DEFAULT_PARAMS:
+        GetBoard()->TrackItems()->Teardrops()->LoadDefaultParams(
+            GetBoard()->TrackItems()->Teardrops()->GetCurrentShape());
+        break;
+        
+    case ID_POPUP_PCB_TEARDROP_SELECT_TEARDROP:
+        GetBoard()->TrackItems()->Teardrops()->SelectShape(TrackNodeItem::TEARDROP::TEARDROP_T);
+        break;
+
+    case ID_POPUP_PCB_TEARDROP_SELECT_FILLET:
+        GetBoard()->TrackItems()->Teardrops()->SelectShape(TrackNodeItem::TEARDROP::FILLET_T);
+        break;
+
+    case ID_POPUP_PCB_TEARDROP_SELECT_SUBLAND:
+        GetBoard()->TrackItems()->Teardrops()->SelectShape(TrackNodeItem::TEARDROP::SUBLAND_T);
+        break;
+        
+    case ID_POPUP_PCB_TEARDROP_SELECT_ZERO:
+        GetBoard()->TrackItems()->Teardrops()->SelectShape(TrackNodeItem::TEARDROP::ZERO_T);
+        break;
+        
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 1:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 2:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 3:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 4:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 5:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 6:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 7:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_FIRST + 8:
+    case ID_POPUP_PCB_TEARDROP_SIZE_LENGTH_LAST:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 1:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 2:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 3:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 4:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 5:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 6:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 7:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_FIRST + 8:
+    case ID_POPUP_PCB_TEARDROP_SIZE_WIDTH_LAST:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 1:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 2:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 3:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 4:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 5:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 6:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 7:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_FIRST + 8:
+    case ID_POPUP_PCB_TEARDROP_NUM_SEGMENTS_LAST:
+        GetBoard()->TrackItems()->Teardrops()->MenuToDo_ChangeSize( id );
+        break;
+    
+    case ID_POPUP_PCB_TEARDROP_PLACE:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Add( static_cast<TRACK*>(GetCurItem()), GetCrossHairPosition() );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_PLACE:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Add( static_cast<BOARD_CONNECTED_ITEM*>(GetCurItem()) );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROP_CHANGE:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Change( GetBoard()->TrackItems()->Teardrops()->Get(
+                static_cast<TRACK*>(GetCurItem()), GetCrossHairPosition()) );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_CHANGE:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Change( static_cast<BOARD_CONNECTED_ITEM*>(GetCurItem()) );
+            OnModify();
+        }
+        break;
+    
+    case ID_POPUP_PCB_TEARDROP_DELETE:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Remove( GetBoard()->TrackItems()->Teardrops()->Get( static_cast<TRACK*>(GetCurItem()), GetCrossHairPosition()),  true, false );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_DELETE:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Remove( static_cast<BOARD_CONNECTED_ITEM*>(GetCurItem()), true, false );
+            OnModify();
+        }
+        break;
+    
+    case ID_POPUP_PCB_TEARDROPS_PLACE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Add( static_cast<TRACK*>(GetCurItem())->GetNetCode(), 
+                                          TEARDROPS::ONLY_TEARDROPS_T );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_CHANGE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Change( static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                             TEARDROPS::ONLY_TEARDROPS_T );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_DELETE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Remove( static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                             TEARDROPS::ONLY_TEARDROPS_T,  true, false );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_PLACE_MODULE:
+        if( GetCurItem() )
+        {
+            if( GetCurItem()->Type() != PCB_MODULE_T )
+                SetCurItem( GetCurItem()->GetParent() );
+            if( GetCurItem() )
+                if( GetCurItem()->Type() == PCB_MODULE_T )
+                {
+                    GetBoard()->TrackItems()->Teardrops()->Add( static_cast<MODULE*>(GetCurItem()) );
+                    OnModify();
+                }
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_CHANGE_MODULE:
+        if( GetCurItem() )
+        {
+            if( GetCurItem()->Type() != PCB_MODULE_T )
+                SetCurItem( GetCurItem()->GetParent() );
+            if( GetCurItem() )
+                if( GetCurItem()->Type() == PCB_MODULE_T )
+                {
+                    GetBoard()->TrackItems()->Teardrops()->Change( static_cast<MODULE*>(GetCurItem()) );
+                    OnModify();
+                }
+        }
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_DELETE_MODULE:
+        if( GetCurItem() )
+        {
+            if( GetCurItem()->Type() != PCB_MODULE_T )
+                SetCurItem( GetCurItem()->GetParent() );
+            if( GetCurItem() )
+                if( GetCurItem()->Type() == PCB_MODULE_T )
+                {
+                    GetBoard()->TrackItems()->Teardrops()->Remove( static_cast<MODULE*>(GetCurItem()), true, false );
+                    OnModify();
+                }
+        }
+        break;
+        
+    case ID_POPUP_PCB_TJUNCTIONS_PLACE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Add( static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                          TEARDROPS::ONLY_TJUNCTIONS_T);
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TJUNCTIONS_CHANGE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Change( static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                             TEARDROPS::ONLY_TJUNCTIONS_T );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TJUNCTIONS_DELETE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Remove( static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                             TEARDROPS::ONLY_TJUNCTIONS_T, true, false );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_JUNCTIONS_PLACE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Add( static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                          TEARDROPS::ONLY_JUNCTIONS_T );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_JUNCTIONS_CHANGE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Change( static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                             TEARDROPS::ONLY_JUNCTIONS_T 
+                                           );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_JUNCTIONS_DELETE_NET:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->Teardrops()->Remove( static_cast<TRACK*>(GetCurItem())->GetNetCode(),
+                                             TEARDROPS::ONLY_JUNCTIONS_T, true, false );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_PLACE_MODULES_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Add(&GetBoard()->m_Modules);
+        OnModify();
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_CHANGE_MODULES_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Change(&GetBoard()->m_Modules);
+        OnModify();
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_DELETE_MODULES_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Remove(&GetBoard()->m_Modules);
+        OnModify();
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_PLACE_VIAS_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Add( &GetBoard()->m_Track, TEARDROPS::ONLY_TEARDROPS_T );
+        OnModify();
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_CHANGE_VIAS_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Change( &GetBoard()->m_Track, TEARDROPS::ONLY_TEARDROPS_T );
+        OnModify();
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_DELETE_VIAS_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Remove( &GetBoard()->m_Track, TEARDROPS::ONLY_TEARDROPS_T );
+        OnModify();
+        break;
+        
+    case  ID_POPUP_PCB_TJUNCTIONS_PLACE_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Add(&GetBoard()->m_Track, TEARDROPS::ONLY_TJUNCTIONS_T);
+        OnModify();
+        break;
+        
+    case  ID_POPUP_PCB_TJUNCTIONS_CHANGE_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Change(&GetBoard()->m_Track, TEARDROPS::ONLY_TJUNCTIONS_T);
+        OnModify();
+        break;
+
+    case  ID_POPUP_PCB_TJUNCTIONS_DELETE_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Remove(&GetBoard()->m_Track, TEARDROPS::ONLY_TJUNCTIONS_T);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_JUNCTIONS_PLACE_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Add(&GetBoard()->m_Track, TEARDROPS::ONLY_JUNCTIONS_T);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_JUNCTIONS_CHANGE_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Change(&GetBoard()->m_Track, TEARDROPS::ONLY_JUNCTIONS_T);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_JUNCTIONS_DELETE_ALL:
+        GetBoard()->TrackItems()->Teardrops()->Remove(&GetBoard()->m_Track, TEARDROPS::ONLY_JUNCTIONS_T);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_MODULES:
+        GetBoard()->TrackItems()->Teardrops()->MarkWarnings(&GetBoard()->m_Modules, m_drc);
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_TEARDROPS_VIAS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_TJUNCTIONS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_JUNCTIONS:
+        GetBoard()->TrackItems()->Teardrops()->MarkWarnings(&GetBoard()->m_Track, TEARDROPS::TEARDROPS_TYPE_TODO(TEARDROPS::ONLY_TEARDROPS_T + id - ID_POPUP_PCB_TEARDROPS_MARK_WARNINGS_TEARDROPS_VIAS), m_drc);
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_MARK_DIFF_MODULES:
+        GetBoard()->TrackItems()->Teardrops()->MarkDifferent(&GetBoard()->m_Track, TEARDROPS::ONLY_PAD_TEARDROPS_T, m_drc);
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_MARK_DIFF_TEARDROPS_VIAS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_DIFF_TJUNCTIONS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_DIFF_JUNCTIONS:
+        GetBoard()->TrackItems()->Teardrops()->MarkDifferent(&GetBoard()->m_Track, TEARDROPS::TEARDROPS_TYPE_TODO(TEARDROPS::ONLY_TEARDROPS_T + id - ID_POPUP_PCB_TEARDROPS_MARK_DIFF_TEARDROPS_VIAS), m_drc);
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_MARK_CURR_MODULES:
+        GetBoard()->TrackItems()->Teardrops()->MarkCurrent(&GetBoard()->m_Track, TEARDROPS::ONLY_PAD_TEARDROPS_T, m_drc);
+        break;
+        
+    case ID_POPUP_PCB_TEARDROPS_MARK_CURR_TEARDROPS_VIAS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_CURR_TJUNCTIONS:
+    case ID_POPUP_PCB_TEARDROPS_MARK_CURR_JUNCTIONS:
+        GetBoard()->TrackItems()->Teardrops()->MarkCurrent(&GetBoard()->m_Track, TEARDROPS::TEARDROPS_TYPE_TODO(TEARDROPS::ONLY_TEARDROPS_T + id - ID_POPUP_PCB_TEARDROPS_MARK_CURR_TEARDROPS_VIAS), m_drc);
+        break;
+        
+    case ID_POPUP_PCB_VIA_PICK_SIZE:
+        if(GetCurItem()->Type() == PCB_VIA_T)
+        {
+            GetBoard()->TrackItems()->PickViaSize(static_cast<VIA*>(GetCurItem()));
+            updateViaSizeSelectBox();
+        }
+        break;
+        
+    case ID_POPUP_PCB_TRACK_PICK_WIDTH:
+        if(GetCurItem()->Type() == PCB_TRACE_T)
+        {
+            GetBoard()->TrackItems()->PickTrackSize(static_cast<TRACK*>(GetCurItem()));
+            updateTraceWidthSelectBox();
+        }
+        break;
+    
+    case ID_POPUP_PCB_TRACKS_MARK_SHARP_ANGLES:
+        GetBoard()->TrackItems()->MarkSharpAngles(&GetBoard()->m_Track, m_drc);
+        break;
+        
+    case ID_POPUP_PCB_TRACKS_CONNECT_CENTER_IN_ITEM:
+        GetBoard()->TrackItems()->FixTrackConnectionsInCenter(&GetBoard()->m_Track);
+        OnModify();
+        break;
+
+//------------------------------------------------------------------------------------
+//Rounded corner
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_PLACE:
+        if( GetCurItem() && GetCurItem()->Type() == PCB_TRACE_T )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->RoundedTracksCorners()->Add( static_cast<TRACK*>(GetCurItem()), GetCrossHairPosition() );
+            if( static_cast<TRACK*>(GetCurItem())->GetNetCode() > 0 )
+                TestNetConnection( nullptr, static_cast<TRACK*>(GetCurItem())->GetNetCode() );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_PLACE_ALL:
+        GetBoard()->TrackItems()->RoundedTracksCorners()->Add(&GetBoard()->m_Track);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_DELETE:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->RoundedTracksCorners()->Remove( GetBoard()->TrackItems()->RoundedTracksCorners()->Get( static_cast<TRACK*>(GetCurItem()), GetCrossHairPosition()), true, false );
+            OnModify();
+        }
+        break;
+
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_DELETE_ALL:
+        GetBoard()->TrackItems()->RoundedTracksCorners()->Remove(&GetBoard()->m_Track);
+        OnModify();
+        break;
+
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_CHANGE:
+        if( GetCurItem() )
+        {
+            m_canvas->MoveCursorToCrossHair();
+            GetBoard()->TrackItems()->RoundedTracksCorners()->Change( GetBoard()->TrackItems()->RoundedTracksCorners()->Get( static_cast<TRACK*>(GetCurItem()), GetCrossHairPosition()), true, false );
+            OnModify();
+        }
+        break;
+        
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_CHANGE_ALL:
+        break;
+        
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNER_COPYCURRENT:
+        if( GetCurItem() )
+            GetBoard()->TrackItems()->RoundedTracksCorners()->CopyCurrentParams( static_cast<TRACK*>(GetCurItem()), 
+                                                        GetCrossHairPosition() 
+                                                      );
+        break;
+
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 1:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 2:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 3:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 4:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 5:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 6:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 7:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 8:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_FIRST + 9:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_SET_LAST:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 1:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 2:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 3:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 4:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 5:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 6:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 7:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 8:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_FIRST + 9:
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SIZE_LENGTH_RATIO_LAST:
+        GetBoard()->TrackItems()->RoundedTracksCorners()->MenuToDo_ChangeSize( id );
+        break;
+    
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_SET_DEFAULT_PARAMS:
+        GetBoard()->TrackItems()->RoundedTracksCorners()->LoadDefaultParams();
+        break;
+
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_EDIT_LENGTH_SET:
+        GetBoard()->TrackItems()->RoundedTracksCorners()->ToggleEdit( ROUNDEDTRACKSCORNERS::EDIT_LENGTH_SET_T );
+        break;
+
+    case ID_POPUP_PCB_ROUNDEDTRACKSCORNERS_EDIT_LENGTH_RATIO:
+        GetBoard()->TrackItems()->RoundedTracksCorners()->ToggleEdit( ROUNDEDTRACKSCORNERS::EDIT_LENGTH_RATIO_T );
+        break;
+
 
     default:
         wxString msg;

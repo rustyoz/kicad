@@ -61,6 +61,8 @@ using namespace std::placeholders;
 #include "pns_segment.h"
 #include "pns_router.h"
 
+#include "trackitems/viastitching.h"
+
 using namespace KIGFX;
 using boost::optional;
 
@@ -141,6 +143,18 @@ static const TOOL_ACTION ACT_PlaceBlindVia( "pcbnew.InteractiveRouter.PlaceBlind
     _( "Adds a blind or buried via at the end of currently routed track."),
     via_buried_xpm, AF_NONE,
     (void*) VIA_ACTION_FLAGS::BLIND_VIA );
+
+static const TOOL_ACTION ACT_SelectLayerAndPlaceThroughVia( "pcbnew.InteractiveRouter.SelectLayerPlaceVia",
+    AS_CONTEXT, TOOL_ACTION::LegacyHotKey( HK_SEL_LAYER_AND_ADD_THROUGH_VIA ),
+    _( "Select Layer And Place Through Via" ),
+    _( "Select layer and Add a through-hole via at zone" ),
+    via_xpm );
+
+static const TOOL_ACTION ACT_SelectLayerAndPlaceBlindVia( "pcbnew.InteractiveRouter.SelectLayerPlaceBlindVia",
+    AS_CONTEXT, TOOL_ACTION::LegacyHotKey( HK_SEL_LAYER_AND_ADD_BLIND_BURIED_VIA ),
+    _( "Select Layer Pair And Place Blind/Buried Via" ),
+    _( "Select layer pair and add a blind or buried via at zone."),
+    via_buried_xpm );
 
 static const TOOL_ACTION ACT_PlaceMicroVia( "pcbnew.InteractiveRouter.PlaceMicroVia",
     AS_CONTEXT, TOOL_ACTION::LegacyHotKey( HK_ADD_MICROVIA ),
@@ -310,6 +324,10 @@ public:
         Add( ACT_SelLayerAndPlaceBlindVia );
         Add( ACT_SwitchPosture );
 
+        AppendSeparator();
+
+        Add( ACT_SelectLayerAndPlaceThroughVia );
+        Add( ACT_SelectLayerAndPlaceBlindVia );
         AppendSeparator();
 
         m_widthMenu.SetBoard( aBoard );
@@ -876,7 +894,19 @@ int ROUTER_TOOL::mainLoop( PNS::ROUTER_MODE aMode )
         }
         else if( evt->IsAction( &ACT_PlaceThroughVia ) )
         {
-            m_toolMgr->RunAction( PCB_ACTIONS::layerToggle, true );
+            board->ViaStitching()->AddThermalVia( m_frame, VIA_THROUGH, false );
+        }
+        else if( evt->IsAction( &ACT_PlaceBlindVia ) )
+        {
+            board->ViaStitching()->AddThermalVia( m_frame, VIA_BLIND_BURIED, false );
+        }
+        else if( evt->IsAction( &ACT_SelectLayerAndPlaceThroughVia ) )
+        {
+            board->ViaStitching()->AddThermalVia( m_frame, VIA_THROUGH, true );
+        }
+        else if( evt->IsAction( &ACT_SelectLayerAndPlaceBlindVia ) )
+        {
+            board->ViaStitching()->AddThermalVia( m_frame, VIA_BLIND_BURIED, true );
         }
         else if( evt->IsAction( &PCB_ACTIONS::remove ) )
         {

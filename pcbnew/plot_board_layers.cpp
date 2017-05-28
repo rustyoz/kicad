@@ -52,6 +52,10 @@
 #include <pcbplot.h>
 #include <plot_auxiliary_data.h>
 
+#include "trackitems/trackitems.h"
+#include "trackitems/roundedcornertrack.h"
+
+
 // Local
 /* Plot a solder mask layer.
  * Solder mask layers have a minimum thickness value and cannot be drawn like standard layers,
@@ -534,6 +538,19 @@ void PlotStandardLayer( BOARD *aBoard, PLOTTER* aPlotter,
         gbr_metadata.SetNetName( track->GetNetname() );
         int width = track->GetWidth() + itemplotter.getFineWidthAdj();
         aPlotter->SetColor( itemplotter.getColor( track->GetLayer() ) );
+
+        if( track->Type() == PCB_TEARDROP_T )
+            aBoard->TrackItems()->Teardrops()->Plot( static_cast<TrackNodeItem::TEARDROP*>(track), aPlotter, 
+                                       &plotMode, &gbr_metadata );
+        else
+            if( track->Type() == PCB_ROUNDEDTRACKSCORNER_T )
+                aBoard->TrackItems()->RoundedTracksCorners()->Plot( static_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(track), aPlotter, 
+                                        &plotMode, &gbr_metadata );
+            else
+                if(dynamic_cast<ROUNDEDCORNERTRACK*>(track))
+                    aPlotter->ThickSegment( dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetStartVisible(), dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetEndVisible(), width, plotMode, &gbr_metadata );
+                else
+
         aPlotter->ThickSegment( track->GetStart(), track->GetEnd(), width, plotMode, &gbr_metadata );
     }
 

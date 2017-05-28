@@ -44,6 +44,8 @@
 #include <drag.h>
 #include <pcbnew_id.h>
 
+#include "trackitems/trackitems.h"
+
 
 static void Show_MoveNode( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aPosition,
                            bool aErase );
@@ -83,6 +85,15 @@ static void Abort_MoveTrack( EDA_DRAW_PANEL* aPanel, wxDC* aDC )
     frame->SetCurItem( NULL );
     aPanel->SetMouseCapture( NULL, NULL );
 
+    pcb->TrackItems()->Teardrops()->UpdateListClear();
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    for( unsigned jj=0 ; jj < g_DragSegmentList.size(); jj++ )
+    {
+        TRACK* tr = g_DragSegmentList[jj].m_Track;
+        if( dynamic_cast<ROUNDEDCORNERTRACK*>( tr ) )
+            pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( tr );
+    }
+
     // Undo move and redraw trace segments.
     for( unsigned jj=0 ; jj < g_DragSegmentList.size(); jj++ )
     {
@@ -90,7 +101,12 @@ static void Abort_MoveTrack( EDA_DRAW_PANEL* aPanel, wxDC* aDC )
         g_DragSegmentList[jj].RestoreInitialValues();
         track->SetState( IN_EDIT, false );
         track->ClearFlags();
+        pcb->TrackItems()->Teardrops()->UpdateListAdd( track );
     }
+
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo();
+    pcb->TrackItems()->Teardrops()->UpdateListAdd( pcb->TrackItems()->RoundedTracksCorners()->UpdateList_GetUpdatedTracks() );
+    pcb->TrackItems()->Teardrops()->UpdateListDo();       
 
     // Clear the undo picker list:
     s_ItemsListPicker.ClearListAndDeleteItems();
@@ -120,7 +136,17 @@ static void Show_MoveNode( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aPo
     wxPoint Pos = aPanel->GetParent()->GetCrossHairPosition();
 
     moveVector = Pos - s_LastPos;
-    s_LastPos  = Pos;
+    BOARD * pcb = static_cast<PCB_EDIT_FRAME*>(aPanel->GetParent())->GetBoard();
+    pcb->TrackItems()->Teardrops()->UpdateListClear();
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    for( unsigned ii = 0; ii < g_DragSegmentList.size(); ii++ )
+    {
+        TRACK* tr = g_DragSegmentList[ii].m_Track;
+        if(dynamic_cast<ROUNDEDCORNERTRACK*>(tr))
+            pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd(tr);
+    }
+    if( aErase )
+        pcb->TrackItems()->RoundedTracksCorners()->UpdateList_DrawTracks( aPanel, aDC, draw_mode );
 
     TRACK *track = NULL;
 
@@ -129,7 +155,11 @@ static void Show_MoveNode( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aPo
         track = g_DragSegmentList[ii].m_Track;
 
         if( aErase )
+        {
+            pcb->TrackItems()->Angles( track, s_LastPos, aPanel, aDC );
+            if( !dynamic_cast<ROUNDEDCORNERTRACK*>(track) )
             track->Draw( aPanel, aDC, draw_mode );
+        }
 
         if( track->GetFlags() & STARTPOINT )
             track->SetStart( track->GetStart() + moveVector );
@@ -139,9 +169,20 @@ static void Show_MoveNode( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aPo
 
         if( track->Type() == PCB_VIA_T )
             track->SetEnd( track->GetStart() );
-
+        pcb->TrackItems()->Angles( track, Pos, aPanel, aDC );
+        pcb->TrackItems()->Teardrops()->UpdateListAdd( track );
+        
+        if( !dynamic_cast<ROUNDEDCORNERTRACK*>(track) )
         track->Draw( aPanel, aDC, draw_mode );
     }
+    pcb->TrackItems()->Angles( &g_DragSegmentList, Pos, aPanel, aDC );
+    pcb->TrackItems()->Target( &g_DragSegmentList, Pos, aPanel, aDC );
+    
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo( aPanel, aDC, draw_mode, aErase );
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateList_DrawTracks( aPanel, aDC, draw_mode );
+    pcb->TrackItems()->Teardrops()->UpdateListAdd( pcb->TrackItems()->RoundedTracksCorners()->UpdateList_GetUpdatedTracks() );
+    pcb->TrackItems()->Teardrops()->UpdateListDo( aPanel, aDC, draw_mode, aErase );       
+    s_LastPos  = Pos;
 
     displ_opts->m_DisplayPcbTrackFill = tmp;
 
@@ -214,6 +255,14 @@ static void Show_Drag_Track_Segment_With_Cte_Slope( EDA_DRAW_PANEL* aPanel, wxDC
      * the segment connected to its start point (if exists)
      */
     int ii = g_DragSegmentList.size() - 1;
+    ii = 0;
+    for(auto pitr : g_DragSegmentList)
+    {
+        if(pitr.m_Track->Type() != PCB_TRACE_T)
+            break;
+        ++ii;
+    }
+    --ii;
     Track = g_DragSegmentList[ii].m_Track;
 
     if( Track == NULL )
@@ -239,6 +288,10 @@ static void Show_Drag_Track_Segment_With_Cte_Slope( EDA_DRAW_PANEL* aPanel, wxDC
     }
 
     GR_DRAWMODE draw_mode = GR_XOR | GR_HIGHLIGHT;
+
+    DISPLAY_OPTIONS* displ_opts = (DISPLAY_OPTIONS*)aPanel->GetDisplayOptions();
+    int cur_displOpt_trackFill = displ_opts->m_DisplayPcbTrackFill;
+    displ_opts->m_DisplayPcbTrackFill = false;
 
     // Undraw the current moved track segments before modification
 
@@ -380,16 +433,65 @@ static void Show_Drag_Track_Segment_With_Cte_Slope( EDA_DRAW_PANEL* aPanel, wxDC
         }
     }
 
-    Track->Draw( aPanel, aDC, draw_mode );
-
-    if( tSegmentToStart )
-        tSegmentToStart->Draw( aPanel, aDC, draw_mode );
-
-    if( tSegmentToEnd )
-        tSegmentToEnd->Draw( aPanel, aDC, draw_mode );
 
     // Display track length
     PCB_BASE_FRAME* frame = (PCB_BASE_FRAME*) aPanel->GetParent();
+    
+    ROUNDEDCORNERTRACK* r_track_start = nullptr;
+    ROUNDEDCORNERTRACK* r_track_end = nullptr;
+    ROUNDEDCORNERTRACK* r_track = nullptr;
+
+    if(dynamic_cast<ROUNDEDCORNERTRACK*>(Track))
+        r_track = static_cast<ROUNDEDCORNERTRACK*>(Track);
+    else
+        Track->Draw( aPanel, aDC, draw_mode );
+
+    if( tSegmentToStart )
+    {
+        if(dynamic_cast<ROUNDEDCORNERTRACK*>(tSegmentToStart))
+            r_track_start = static_cast<ROUNDEDCORNERTRACK*>(tSegmentToStart);
+        else
+            tSegmentToStart->Draw( aPanel, aDC, draw_mode );
+    }
+
+    if( tSegmentToEnd )
+    {
+        if(dynamic_cast<ROUNDEDCORNERTRACK*>(tSegmentToEnd))
+            r_track_end = static_cast<ROUNDEDCORNERTRACK*>(tSegmentToEnd);
+        else
+            tSegmentToEnd->Draw( aPanel, aDC, draw_mode );
+    }
+
+    BOARD* pcb = frame->GetBoard();
+    pcb->TrackItems()->Teardrops()->UpdateListClear();
+    pcb->TrackItems()->Teardrops()->UpdateListAdd( Track );
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( Track );
+
+    if( tSegmentToStart )
+    {
+        pcb->TrackItems()->Teardrops()->UpdateListAdd( tSegmentToStart );
+        pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( tSegmentToStart );
+    }
+
+    if( tSegmentToEnd )
+    {
+        pcb->TrackItems()->Teardrops()->UpdateListAdd( tSegmentToEnd );
+        pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( tSegmentToEnd );
+    }
+
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo( aPanel, aDC, draw_mode, aErase );
+    pcb->TrackItems()->Teardrops()->UpdateListAdd( pcb->TrackItems()->RoundedTracksCorners()->UpdateList_GetUpdatedTracks() );
+    pcb->TrackItems()->Teardrops()->UpdateListDo( aPanel, aDC, draw_mode, aErase );       
+    
+    if(r_track)
+        r_track->Draw( aPanel, aDC, draw_mode );
+    if(r_track_start)
+        r_track_start->Draw( aPanel, aDC, draw_mode );
+    if(r_track_end)
+        r_track_end->Draw( aPanel, aDC, draw_mode );
+
+    displ_opts->m_DisplayPcbTrackFill = cur_displOpt_trackFill;
     frame->SetMsgPanel( Track );
 }
 
@@ -415,6 +517,14 @@ bool InitialiseDragParameters()
      * the segment connected to its start point (if exists)
      */
     int ii = g_DragSegmentList.size() - 1;
+    ii = 0;
+    for(auto pitr : g_DragSegmentList)
+    {
+        if(pitr.m_Track->Type() != PCB_TRACE_T)
+            break;
+        ++ii;
+    }
+    --ii;
     Track = g_DragSegmentList[ii].m_Track;
     if( Track == NULL )
         return false;
@@ -597,7 +707,7 @@ void PCB_EDIT_FRAME::StartMoveOneNodeOrSegment( TRACK* aTrack, wxDC* aDC, int aC
         {
             Collect_TrackSegmentsToDrag( GetBoard(), aTrack->GetStart(),
                                          aTrack->GetLayerSet(),
-                                         aTrack->GetNetCode(), aTrack->GetWidth() / 2 );
+                                         aTrack->GetNetCode(), 0 );
         }
 
         PosInit = aTrack->GetStart();
@@ -627,7 +737,7 @@ void PCB_EDIT_FRAME::StartMoveOneNodeOrSegment( TRACK* aTrack, wxDC* aDC, int aC
         case ID_POPUP_PCB_MOVE_TRACK_NODE:  // Drag via or move node
             pos = (diag & STARTPOINT) ? aTrack->GetStart() : aTrack->GetEnd();
             Collect_TrackSegmentsToDrag( GetBoard(), pos, aTrack->GetLayerSet(),
-                                         aTrack->GetNetCode(), aTrack->GetWidth() / 2 );
+                                         aTrack->GetNetCode(), 0);
             PosInit = pos;
             break;
         }
@@ -681,14 +791,25 @@ void PCB_EDIT_FRAME::Start_DragTrackSegmentAndKeepSlope( TRACK* track, wxDC*  DC
     if( ( track->start == NULL ) || ( track->start->Type() == PCB_TRACE_T ) )
         TrackToStartPoint = track->GetTrack( GetBoard()->m_Track, NULL, ENDPOINT_START, true, false );
 
+    //Eliminate Junction.
+    TrackToStartPoint = GetBoard()->TrackItems()->DragKeepSlopeSegmentTypeCheck( TrackToStartPoint, 
+                                                                                track, 
+                                                                                GetBoard()->m_Track,
+                                                                                ENDPOINT_START );
+
     //  Test if more than one segment is connected to this point
     if( TrackToStartPoint )
     {
         TrackToStartPoint->SetState( BUSY, true );
 
-        if( ( TrackToStartPoint->Type() == PCB_VIA_T )
-           || track->GetTrack( GetBoard()->m_Track, NULL, ENDPOINT_START, true, false ) )
+        if( ( TrackToStartPoint->Type() == PCB_VIA_T ) )
             error = true;
+        //Eliminate track node items on track error check.
+        error = GetBoard()->TrackItems()->DragKeepSlopeSegmentsNumCheck( error, 
+                                                                        TrackToStartPoint, 
+                                                                        track, 
+                                                                        GetBoard()->m_Track, 
+                                                                        ENDPOINT_START );
 
         TrackToStartPoint->SetState( BUSY, false );
     }
@@ -696,14 +817,25 @@ void PCB_EDIT_FRAME::Start_DragTrackSegmentAndKeepSlope( TRACK* track, wxDC*  DC
     if( ( track->end == NULL ) || ( track->end->Type() == PCB_TRACE_T ) )
         TrackToEndPoint = track->GetTrack( GetBoard()->m_Track, NULL, ENDPOINT_END, true, false );
 
+    //Eliminate Junction.
+    TrackToEndPoint = GetBoard()->TrackItems()->DragKeepSlopeSegmentTypeCheck( TrackToEndPoint,
+                                                                              track,
+                                                                              GetBoard()->m_Track,
+                                                                              ENDPOINT_END );
+
     //  Test if more than one segment is connected to this point
     if( TrackToEndPoint )
     {
         TrackToEndPoint->SetState( BUSY, true );
 
-        if( (TrackToEndPoint->Type() == PCB_VIA_T)
-           || track->GetTrack( GetBoard()->m_Track, NULL, ENDPOINT_END, true, false ) )
+        if( (TrackToEndPoint->Type() == PCB_VIA_T) )
             error = true;
+        // Eliminate track node items on track error check.
+        error = GetBoard()->TrackItems()->DragKeepSlopeSegmentsNumCheck( error,
+                                                                        TrackToEndPoint,
+                                                                        track, 
+                                                                        GetBoard()->m_Track, 
+                                                                        ENDPOINT_END );
 
         TrackToEndPoint->SetState( BUSY, false );
     }
@@ -716,10 +848,16 @@ void PCB_EDIT_FRAME::Start_DragTrackSegmentAndKeepSlope( TRACK* track, wxDC*  DC
     }
 
     if( !TrackToStartPoint || ( TrackToStartPoint->Type() != PCB_TRACE_T ) )
+    {
+        TrackToStartPoint = nullptr;
         s_StartSegmentPresent = false;
+    }
 
     if( !TrackToEndPoint || ( TrackToEndPoint->Type() != PCB_TRACE_T ) )
+    {
+        TrackToEndPoint = nullptr;
         s_EndSegmentPresent = false;
+    }
 
     // Change high light net: the new one will be highlighted
     GetBoard()->PushHighLight();
@@ -754,6 +892,19 @@ void PCB_EDIT_FRAME::Start_DragTrackSegmentAndKeepSlope( TRACK* track, wxDC*  DC
     }
 
     AddSegmentToDragList( track->GetFlags(), track );
+
+    GetBoard()->TrackItems()->Teardrops()->AddToDragList( track, g_DragSegmentList );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->AddToDragList( track, g_DragSegmentList );
+    if( TrackToStartPoint )
+    {
+        GetBoard()->TrackItems()->Teardrops()->AddToDragList( TrackToStartPoint, g_DragSegmentList ); 
+        GetBoard()->TrackItems()->RoundedTracksCorners()->AddToDragList( TrackToStartPoint, g_DragSegmentList );
+    }
+    if( TrackToEndPoint )
+    {
+        GetBoard()->TrackItems()->Teardrops()->AddToDragList( TrackToEndPoint, g_DragSegmentList ); 
+        GetBoard()->TrackItems()->RoundedTracksCorners()->AddToDragList( TrackToEndPoint, g_DragSegmentList );
+    }
 
     UndrawAndMarkSegmentsToDrag( m_canvas, DC );
 
@@ -822,6 +973,13 @@ bool PCB_EDIT_FRAME::PlaceDraggedOrMovedTrackSegment( TRACK* Track, wxDC* DC )
     Track->ClearFlags();
     Track->SetState( IN_EDIT, false );
 
+    BOARD* pcb = GetBoard();
+    //Junctions. 
+    //pcb->Teardrops()->Repopulate( current_net_code, TEARDROPS::JUNCTIONS_AND_TJUNCTIONS_T, 
+    //                                     &s_ItemsListPicker );
+    pcb->TrackItems()->Teardrops()->UpdateListClear();
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    
     // Draw dragged tracks
     for( unsigned ii = 0; ii < g_DragSegmentList.size(); ii++ )
     {
@@ -847,7 +1005,14 @@ bool PCB_EDIT_FRAME::PlaceDraggedOrMovedTrackSegment( TRACK* Track, wxDC* DC )
             Track->SetState( END_ONPAD, true );
         else
             Track->SetState( END_ONPAD, false );
+
+        GetBoard()->TrackItems()->RoundedTracksCorners()->UpdateListAdd( Track );
+        GetBoard()->TrackItems()->Teardrops()->UpdateListAdd( Track );
     }
+
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo();
+    pcb->TrackItems()->Teardrops()->UpdateListAdd( GetBoard()->TrackItems()->RoundedTracksCorners()->UpdateList_GetUpdatedTracks() );
+    pcb->TrackItems()->Teardrops()->UpdateListDo();       
 
     EraseDragList();
 

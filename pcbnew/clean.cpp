@@ -41,6 +41,9 @@
 
 #include <tuple>
 
+#include "trackitems/viastitching.h"
+#include "trackitems/trackitems.h"
+
 // Helper class used to clean tracks and vias
 class TRACKS_CLEANER: CONNECTIONS
 {
@@ -134,13 +137,16 @@ void PCB_EDIT_FRAME::Clean_Pcb()
         return;
 
     // Old model has to be refreshed, GAL normally does not keep updating it
-    Compile_Ratsnest( NULL, false );
 
     wxBusyCursor( dummy );
     BOARD_COMMIT commit( this );
     TRACKS_CLEANER cleaner( GetBoard(), commit );
 
-    bool modified = cleaner.CleanupBoard( dlg.m_deleteShortCircuits, dlg.m_cleanVias,
+    bool modified = false;
+    modified |= GetBoard()->ViaStitching()->CleanThermalVias( this, &commit );
+    Fill_All_Zones( this, false );
+
+    modified |= cleaner.CleanupBoard( dlg.m_deleteShortCircuits, dlg.m_cleanVias,
                             dlg.m_mergeSegments, dlg.m_deleteUnconnectedSegm );
 
     if( modified )
@@ -169,6 +175,8 @@ bool TRACKS_CLEANER::CleanupBoard( bool aRemoveMisConnected,
     buildTrackConnectionInfo();
 
     bool modified = false;
+
+    modified |= ( m_brd->TrackItems()->RoundedTracksCorners()->Clean( &m_brd->m_Track, m_commit ) );
 
     // delete redundant vias
     if( aCleanVias )
@@ -209,6 +217,9 @@ bool TRACKS_CLEANER::CleanupBoard( bool aRemoveMisConnected,
                 clean_segments();
         }
     }
+
+    //Clean broken teardrops.
+    modified |= ( m_brd->TrackItems()->Teardrops()->Clean( &m_brd->m_Track ) );
 
     return modified;
 }
@@ -288,6 +299,18 @@ bool TRACKS_CLEANER::removeBadTrackSegments()
     {
         segment->SetState( FLAG0, false );
 
+        if( segment->Type() == PCB_TEARDROP_T )
+            continue;
+        if( segment->Type() == PCB_ROUNDEDTRACKSCORNER_T )
+            continue;
+        
+        //Do not remove thermal via.
+        if( dynamic_cast<const VIA*>( segment ) )
+        {
+            if( dynamic_cast<const VIA*>( segment )->GetThermalCode() && segment->GetNetCode() )
+                continue;
+        }
+                
         for( unsigned ii = 0; ii < segment->m_PadsConnected.size(); ++ii )
         {
             if( segment->GetNetCode() != segment->m_PadsConnected[ii]->GetNetCode() )
@@ -312,6 +335,8 @@ bool TRACKS_CLEANER::removeBadTrackSegments()
 
         if( segment->GetState( FLAG0 ) )    // Segment is flagged to be removed
         {
+            m_brd->TrackItems()->Teardrops()->Remove( segment, m_commit, true );
+            m_brd->TrackItems()->RoundedTracksCorners()->Remove( segment, m_commit, true );
             isModified = true;
             m_brd->Remove( segment );
             m_commit.Removed( segment );
@@ -345,6 +370,7 @@ bool TRACKS_CLEANER::remove_duplicates_of_via( const VIA *aVia )
         if( ( alt_via->GetViaType() == VIA_THROUGH ) &&
                 ( alt_via->GetStart() == aVia->GetStart() ) )
         {
+            m_brd->TrackItems()->Teardrops()->Remove( alt_via, m_commit, true );
             m_brd->Remove( alt_via );
             m_commit.Removed( alt_via );
             modified = true;
@@ -374,6 +400,11 @@ bool TRACKS_CLEANER::clean_vias()
         {
             modified |= remove_duplicates_of_via( via );
 
+            //Do not remove thermal via with netcode.
+            if( via->GetThermalCode() )
+                if( via->GetNetCode() || const_cast<VIA*>(via)->GetThermalZones()->size() )
+                    continue;
+                
             /* To delete through Via on THT pads at same location
              * Examine the list of connected pads:
              * if one through pad is found, the via can be removed */
@@ -385,6 +416,7 @@ bool TRACKS_CLEANER::clean_vias()
                 if( ( pad->GetLayerSet() & all_cu ) == all_cu )
                 {
                     // redundant: delete the via
+                    m_brd->TrackItems()->Teardrops()->Remove( via, m_commit, true );
                     m_brd->Remove( via );
                     m_commit.Removed( via );
                     modified = true;
@@ -482,6 +514,19 @@ bool TRACKS_CLEANER::deleteDanglingTracks()
         {
             next_track = track->Next();
 
+            if( track->Type() == PCB_TEARDROP_T )
+                continue;
+            if( track->Type() == PCB_ROUNDEDTRACKSCORNER_T )
+                continue;
+
+            //Do not remove thermal via.
+            if( dynamic_cast<const VIA*>( track ) )
+            {
+                if( dynamic_cast<const VIA*>( track )->GetThermalCode() 
+                    && const_cast<VIA*>( dynamic_cast<const VIA*>( track ) )->GetThermalZones()->size() ) 
+                    continue;
+            }
+            
             bool flag_erase = false; // Start without a good reason to erase it
 
             /* if a track endpoint is not connected to a pad, test if
@@ -501,6 +546,8 @@ bool TRACKS_CLEANER::deleteDanglingTracks()
 
             if( flag_erase )
             {
+                m_brd->TrackItems()->Teardrops()->Remove( track, m_commit, true );
+                m_brd->TrackItems()->RoundedTracksCorners()->Remove( track, m_commit, true );
                 m_brd->Remove( track );
                 m_commit.Removed( track );
 
@@ -529,6 +576,8 @@ bool TRACKS_CLEANER::delete_null_segments()
 
         if( segment->IsNull() )     // Length segment = 0; delete it
         {
+            m_brd->TrackItems()->Teardrops()->Remove( segment, m_commit, true );
+            m_brd->TrackItems()->RoundedTracksCorners()->Remove( segment, m_commit, true );
             m_brd->Remove( segment );
             m_commit.Removed( segment );
             modified = true;
@@ -552,6 +601,16 @@ bool TRACKS_CLEANER::remove_duplicates_of_track( const TRACK *aTrack )
         if( aTrack->GetNetCode() != other->GetNetCode() )
             break;
 
+        //Do not delete teardrop(s).
+        if(aTrack->Type() == PCB_TEARDROP_T)
+            break;
+        if(other->Type() == PCB_TEARDROP_T)
+            continue;
+        if(aTrack->Type() == PCB_ROUNDEDTRACKSCORNER_T)
+            break;
+        if(other->Type() == PCB_ROUNDEDTRACKSCORNER_T)
+            continue;
+
         // Must be of the same type, on the same layer and the endpoints
         // must be the same (maybe swapped)
         if( ( aTrack->Type() == other->Type() ) &&
@@ -562,9 +621,18 @@ bool TRACKS_CLEANER::remove_duplicates_of_track( const TRACK *aTrack )
                 ( ( aTrack->GetStart() == other->GetEnd() ) &&
                  ( aTrack->GetEnd() == other->GetStart() ) ) )
             {
+                m_brd->TrackItems()->Teardrops()->ToMemory( other );
+                m_brd->TrackItems()->Teardrops()->Remove( other, m_commit, true );
+                m_brd->TrackItems()->RoundedTracksCorners()->ToMemory( other );
+                m_brd->TrackItems()->RoundedTracksCorners()->Remove( other, m_commit, true );
                 m_brd->Remove( other );
                 m_commit.Removed( other );
                 modified = true;
+
+                m_brd->TrackItems()->Teardrops()->FromMemory( aTrack, m_commit );
+                m_brd->TrackItems()->Teardrops()->Update( aTrack->GetNetCode(), aTrack );
+                m_brd->TrackItems()->RoundedTracksCorners()->FromMemory( aTrack, m_commit );
+                m_brd->TrackItems()->RoundedTracksCorners()->Update( aTrack );
             }
         }
     }
@@ -602,6 +670,7 @@ bool TRACKS_CLEANER::merge_collinear_of_track( TRACK* aSegment )
 
                     if( !yet_another )
                     {
+                        EDA_ITEM* seg_clone = aSegment->Clone();
                         // Try to merge them
                         TRACK* segDelete = mergeCollinearSegmentIfPossible( aSegment,
                                 other, endpoint );
@@ -609,9 +678,21 @@ bool TRACKS_CLEANER::merge_collinear_of_track( TRACK* aSegment )
                         // Merge succesful, the other one has to go away
                         if( segDelete )
                         {
+                            m_brd->TrackItems()->Teardrops()->ToMemory( segDelete );
+                            m_brd->TrackItems()->Teardrops()->Remove( segDelete, m_commit, true );
+                            m_brd->TrackItems()->RoundedTracksCorners()->ToMemory( segDelete );
+                            m_brd->TrackItems()->RoundedTracksCorners()->Remove( segDelete, m_commit, true );
                             m_brd->Remove( segDelete );
+                            //TODO
+                            //If there are more than one tracks/nodes to be removed, m_comit.Removed() craches. hp
                             m_commit.Removed( segDelete );
                             merged_this = true;
+
+                            m_commit.Modified( aSegment, seg_clone );
+                            m_brd->TrackItems()->Teardrops()->FromMemory( aSegment, m_commit );
+                            m_brd->TrackItems()->Teardrops()->Update( aSegment->GetNetCode(), aSegment );
+                            m_brd->TrackItems()->RoundedTracksCorners()->FromMemory( aSegment, m_commit );
+                            m_brd->TrackItems()->RoundedTracksCorners()->Update( aSegment );
                         }
                     }
                 }

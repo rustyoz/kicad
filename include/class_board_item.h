@@ -192,7 +192,8 @@ public:
      */
     bool IsTrack() const
     {
-        return ( Type() == PCB_TRACE_T ) || ( Type() == PCB_VIA_T );
+        return ( Type() == PCB_TRACE_T ) || ( Type() == PCB_VIA_T ) || 
+                ( Type() == PCB_TEARDROP_T ) || ( Type() == PCB_ROUNDEDTRACKSCORNER_T );
     }
 
     /**

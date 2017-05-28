@@ -49,6 +49,8 @@
 
 #include <wx/wupdlock.h>
 
+#include "trackitems/trackitems.h"
+
 extern bool IsWxPythonLoaded();
 
 #define SEL_LAYER_HELP _( \
@@ -555,6 +557,7 @@ void PCB_EDIT_FRAME::ReCreateAuxiliaryToolbar()
 
         m_auxiliaryToolBar->Realize();
         m_auimgr.Update();
+        GetBoard()->TrackItems()->RoundedTracksCorners()->RecreateMenu();
         return;
     }
 

@@ -33,6 +33,8 @@
 #include <drc_stuff.h>
 #include <class_drc_item.h>
 #include <base_units.h>
+#include "trackitems/teardrops.h"
+
 
 
 wxString DRC_ITEM::GetErrorText() const

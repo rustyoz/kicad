@@ -226,6 +226,8 @@ static EDA_HOTKEY HkTrackDisplayMode( _HKI( "Track Display Mode" ),
                                       HK_SWITCH_TRACK_DISPLAY_MODE, 'K' );
 static EDA_HOTKEY HkAddModule( _HKI( "Add Footprint" ), HK_ADD_MODULE, 'O' );
 
+static EDA_HOTKEY HkGotoNextMarker( _HKI( "Goto Next Marker" ), HK_GOTO_NEXT_MARKER, 'G' + GR_KB_CTRL );
+
 // List of common hotkey descriptors
 EDA_HOTKEY* common_Hotkey_List[] =
 {
@@ -277,6 +279,7 @@ EDA_HOTKEY* board_edit_Hotkey_List[] =
     &HkSwitchHighContrastMode,
     &HkCanvasDefault,          &HkCanvasCairo,               &HkCanvasOpenGL,
     &HkZoneFillOrRefill,       &HkZoneRemoveFilled,
+    &HkGotoNextMarker,
     NULL
 };
 

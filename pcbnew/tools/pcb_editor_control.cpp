@@ -57,6 +57,8 @@
 #include <tools/tool_event_utils.h>
 
 #include <functional>
+#include "trackitems/viastitching.h"
+
 using namespace std::placeholders;
 
 
@@ -670,6 +672,18 @@ int PCB_EDITOR_CONTROL::ZoneFillAll( const TOOL_EVENT& aEvent )
 
     BOARD_COMMIT commit( this );
 
+    //Via Stitching: Set all thermal vias netcodes for recovering.
+    /*
+    m_frame->Compile_Ratsnest( nullptr, false );
+    for( int i = 0; i < board->GetAreaCount(); ++i )
+    {
+        ZONE_CONTAINER* zone = board->GetArea( i );
+        commit.Modify( zone );
+        m_frame->Fill_Zone( zone );
+    }
+    ViaStitching::ConnectThermalViasZonesPolygons( m_frame->GetBoard() );
+    */
+
     for( int i = 0; i < board->GetAreaCount(); ++i )
     {
         ZONE_CONTAINER* zone = board->GetArea( i );
@@ -681,6 +695,10 @@ int PCB_EDITOR_CONTROL::ZoneFillAll( const TOOL_EVENT& aEvent )
         ratsnest->Update( zone );
         getView()->Update( zone );
     }
+
+    //Via Stitching.
+    //ViaStitching::SetThermalViasNetcodes( m_frame->GetBoard() );
+    m_frame->Fill_All_Zones( m_frame, false );
 
     commit.Push( _( "Fill All Zones" ) );
 

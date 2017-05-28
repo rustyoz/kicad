@@ -39,6 +39,10 @@
 // Helper classes to handle connection points
 #include <connect.h>
 
+#include "trackitems/viastitching.h"
+#include "trackitems/roundedcornertrack.h"
+#include "trackitems/roundedtrackscorner.h"
+
 extern void Merge_SubNets_Connected_By_CopperAreas( BOARD* aPcb );
 extern void Merge_SubNets_Connected_By_CopperAreas( BOARD* aPcb, int aNetcode );
 
@@ -129,6 +133,13 @@ void CONNECTIONS::SearchTracksConnectedToPads( bool add_to_padlist, bool add_to_
             CONNECTED_POINT* cp_item = candidates[jj];
 
             if( !( pad->GetLayerSet() & cp_item->GetTrack()->GetLayerSet() ).any() )
+                continue;
+
+            //Do not connect teardrop.
+            if( cp_item->GetTrack()->Type() == PCB_TEARDROP_T )
+                continue;
+            //Do not connect rounded corner.
+            if( cp_item->GetTrack()->Type() == PCB_ROUNDEDTRACKSCORNER_T )
                 continue;
 
             if( pad->HitTest( cp_item->GetPoint() ) )
@@ -274,12 +285,24 @@ void CONNECTIONS::BuildTracksCandidatesList( TRACK* aBegin, TRACK* aEnd)
     m_candidates.reserve( ii );
     for( TRACK* track = aBegin; track; track = track->Next() )
     {
-        CONNECTED_POINT candidate( track, track->GetStart() );
+        wxPoint start_point = track->GetStart();
+        if(dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(track))
+            start_point = dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(track)->GetStartVisible();
+        if(dynamic_cast<ROUNDEDCORNERTRACK*>(track))
+            start_point = dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetStartVisible();
+
+        CONNECTED_POINT candidate( track, start_point );
 
         m_candidates.push_back( candidate );
-        if( track->Type() != PCB_VIA_T )
+        if( track->Type() == PCB_TRACE_T )
         {
-            CONNECTED_POINT candidate2( track, track->GetEnd());
+            wxPoint end_point = track->GetEnd();
+            if(dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(track))
+                end_point = dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(track)->GetEndVisible();
+            if(dynamic_cast<ROUNDEDCORNERTRACK*>(track))
+                end_point = dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetEndVisible();
+            
+            CONNECTED_POINT candidate2( track, end_point );
             m_candidates.push_back( candidate2 );
         }
 
@@ -319,6 +342,11 @@ int CONNECTIONS::SearchConnectedTracks( const TRACK* aTrack )
 #endif
 
     wxPoint position = aTrack->GetStart();
+    
+    if(dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(const_cast<TRACK*>(aTrack)))
+        position = dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(const_cast<TRACK*>(aTrack))->GetStartVisible();
+    if(dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(aTrack)))
+        position = dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(aTrack))->GetStartVisible();
 
     for( int kk = 0; kk < 2; kk++ )
     {
@@ -369,6 +397,9 @@ int CONNECTIONS::SearchConnectedTracks( const TRACK* aTrack )
             if( ctrack == aTrack )
                 continue;
 
+            //Do not connect teardrop.
+            if( ctrack->Type() == PCB_TEARDROP_T )
+                continue;
             // We have a good candidate: calculate the actual distance
             // between ends, which should be <= dist max.
             wxPoint delta = tracks_candidates[ii]->GetPoint() - position;
@@ -387,6 +418,11 @@ int CONNECTIONS::SearchConnectedTracks( const TRACK* aTrack )
             break;
 
         position = aTrack->GetEnd();
+
+        if(dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(const_cast<TRACK*>(aTrack)))
+            position = dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(const_cast<TRACK*>(aTrack))->GetEndVisible();
+        if(dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(aTrack)))
+            position = dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(aTrack))->GetEndVisible();
     }
 
     return count;
@@ -863,9 +899,18 @@ void PCB_BASE_FRAME::RecalculateAllTracksNetcode()
     // Build the net info list
     GetBoard()->BuildListOfNets();
 
+    // Via Stitching. Temp container.
+    std::unordered_map<const VIA*, int> collected_vias;
+    collected_vias.clear();
+
     // Reset variables and flags used in computation
     for( TRACK* t = m_Pcb->m_Track;  t;  t = t->Next() )
     {
+        // Via Stitching. Collect Vias.
+         const VIA* via = dynamic_cast<const VIA*>( t );
+         if( via  )
+            collected_vias.insert( std::pair<const VIA*, int> ( via, t->GetNetCode() ) );
+
         t->m_TracksConnected.clear();
         t->m_PadsConnected.clear();
         t->start = NULL;
@@ -890,6 +935,9 @@ void PCB_BASE_FRAME::RecalculateAllTracksNetcode()
     // set the track net code to the pad netcode
     for( TRACK* t = m_Pcb->m_Track;  t;  t = t->Next() )
     {
+        if( ViaStitching::IsThermalVia( t ) )
+            continue;
+
         if( t->m_PadsConnected.size() )
             t->SetNetCode( t->m_PadsConnected[0]->GetNetCode() );
     }
@@ -897,6 +945,9 @@ void PCB_BASE_FRAME::RecalculateAllTracksNetcode()
     // Pass 2: build connections between track ends
     for( TRACK* t = m_Pcb->m_Track;  t;  t = t->Next() )
     {
+        if( ViaStitching::IsThermalVia( t ) )
+            continue;
+
         connections.SearchConnectedTracks( t );
         connections.GetConnectedTracks( t );
     }
@@ -911,6 +962,9 @@ void PCB_BASE_FRAME::RecalculateAllTracksNetcode()
 
         for( TRACK* t = m_Pcb->m_Track;  t;  t = t->Next() )
         {
+            if( ViaStitching::IsThermalVia( t ) )
+                continue;
+
             int netcode = t->GetNetCode();
 
             if( netcode == 0 )
@@ -944,6 +998,9 @@ void PCB_BASE_FRAME::RecalculateAllTracksNetcode()
             }
         }
     }
+
+    //Via Stitching. Set netcode to thermal vias.
+    m_Pcb->ViaStitching()->SetNetcodes( collected_vias );
 
     if( IsGalCanvasActive() )
     {

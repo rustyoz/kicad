@@ -37,6 +37,8 @@
 #include <PolyLine.h>
 #include <trigo.h>
 
+#include <class_zone.h>
+#include <unordered_map>
 
 class TRACK;
 class VIA;
@@ -189,10 +191,11 @@ public:
      * clearance when the circle is approximated by segment bigger or equal
      * to the real clearance value (usually near from 1.0)
      */
-    void TransformShapeWithClearanceToPolygon( SHAPE_POLY_SET& aCornerBuffer,
+    virtual void TransformShapeWithClearanceToPolygon( SHAPE_POLY_SET& aCornerBuffer,
                                                int             aClearanceValue,
                                                int             aCircleToSegmentsCount,
                                                double          aCorrectionFactor ) const;
+
     /**
      * Function IsPointOnEnds
      * returns STARTPOINT if point if near (dist = min_dist) start point, ENDPOINT if
@@ -446,6 +449,22 @@ public:
     VIATYPE_T GetViaType() const          { return m_ViaType; }
     void SetViaType( VIATYPE_T aViaType ) { m_ViaType = aViaType; }
 
+    //Stitch vias
+    int GetThermalCode( void ) const { return m_thermal; }
+    void SetThermalCode( const int aThermalCode ) { m_thermal = aThermalCode; }
+    std::vector<ZONE_CONTAINER*>* GetThermalZones( void ) { 
+        return &m_thermal_zones;
+    }
+    void SetThermalZones( std::vector<ZONE_CONTAINER*>& aZones ) { 
+        m_thermal_zones.swap(aZones);
+    }
+    std::unordered_map<const SHAPE_POLY_SET::POLYGON*, ZONE_CONTAINER*>* GetThermalPolysZones( void ) {
+        return &m_thermal_polys_zones; 
+    }
+    void SetThermalPolysZones( std::unordered_map<const SHAPE_POLY_SET::POLYGON*, ZONE_CONTAINER*>& aPolyZone ) {
+        m_thermal_polys_zones.swap( aPolyZone ); 
+    }
+
     /**
      * Function SetDrill
      * sets the drill value for vias.
@@ -490,6 +509,10 @@ private:
     VIATYPE_T m_ViaType;        // Type of via
 
     int       m_Drill;          // for vias: via drill (- 1 for default value)
+
+    int       m_thermal{0};
+    std::vector<ZONE_CONTAINER*> m_thermal_zones;
+    std::unordered_map<const SHAPE_POLY_SET::POLYGON*, ZONE_CONTAINER*> m_thermal_polys_zones;
 };
 
 

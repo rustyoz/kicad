@@ -43,6 +43,8 @@
 #include <drag.h>
 #include <dialog_get_footprint_by_name.h>
 
+#include "trackitems/trackitems.h"
+
 static void MoveFootprint( EDA_DRAW_PANEL* aPanel, wxDC* aDC,
                            const wxPoint& aPosition, bool aErase );
 static void Abort_MoveOrCopyModule( EDA_DRAW_PANEL* Panel, wxDC* DC );
@@ -139,6 +141,8 @@ void PCB_EDIT_FRAME::StartMoveModule( MODULE* aModule, wxDC* aDC,
 
         UndrawAndMarkSegmentsToDrag( m_canvas, aDC );
     }
+    else
+        GetBoard()->TrackItems()->Teardrops()->Remove( aModule, &s_PickedList, true );
 
     GetBoard()->m_Status_Pcb |= DO_NOT_SHOW_GENERAL_RASTNEST;
     m_canvas->SetMouseCapture( MoveFootprint, Abort_MoveOrCopyModule );
@@ -189,6 +193,7 @@ void Abort_MoveOrCopyModule( EDA_DRAW_PANEL* Panel, wxDC* DC )
                 pt_segm->Draw( Panel, DC, GR_OR );
             }
 
+            pcbframe->GetBoard()->TrackItems()->Teardrops()->Update( module, Panel, DC, GR_XOR, true );
             EraseDragList();
             module->ClearFlags( IS_MOVED );
         }
@@ -212,6 +217,8 @@ void Abort_MoveOrCopyModule( EDA_DRAW_PANEL* Panel, wxDC* DC )
             pcbframe->Change_Side_Module( module, NULL );
 
         module->Draw( Panel, DC, GR_OR );
+        if( !g_DragSegmentList.size() )
+            pcbframe->GetBoard()->TrackItems()->Teardrops()->Recreate( module, false );
     }
 
     pcbframe->SetCurItem( NULL );
@@ -252,6 +259,12 @@ void MoveFootprint( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aPosition,
     module->DrawOutlinesWhenMoving( aPanel, aDC, g_Offset_Module );
 
     DrawSegmentWhileMovingFootprint( aPanel, aDC );
+    
+    if( g_DragSegmentList.size() )
+    {
+        PCB_EDIT_FRAME* edit_frame = static_cast<PCB_EDIT_FRAME*>( aPanel->GetParent() );
+        edit_frame->GetBoard()->TrackItems()->Teardrops()->Update( module, aPanel, aDC, GR_XOR, true );
+    }
 }
 
 
@@ -264,10 +277,17 @@ bool PCB_EDIT_FRAME::Delete_Module( MODULE* aModule, wxDC* aDC )
 
     SetMsgPanel( aModule );
 
+    //Delete teardrops from module 
+    PICKED_ITEMS_LIST pickedItems;
+    ITEM_PICKER       picker( NULL, UR_DELETED );
+    GetBoard()->TrackItems()->Teardrops()->Remove( aModule, &pickedItems, true );
+
     /* Remove module from list, and put it in undo command list */
     m_Pcb->m_Modules.Remove( aModule );
     aModule->SetState( IS_DELETED, true );
-    SaveCopyInUndoList( aModule, UR_DELETED );
+    picker.SetItem( aModule );
+    pickedItems.PushItem( picker );
+    SaveCopyInUndoList( pickedItems, UR_DELETED );
 
     if( aDC && GetBoard()->IsElementVisible( LAYER_RATSNEST ) )
         Compile_Ratsnest( aDC, true );
@@ -404,6 +424,9 @@ void PCB_BASE_FRAME::PlaceModule( MODULE* aModule, wxDC* aDC, bool aDoNotRecreat
         if( aDC )
             track->Draw( m_canvas, aDC, GR_OR );
     }
+
+    if( g_DragSegmentList.size() )
+        GetBoard()->TrackItems()->Teardrops()->Update( aModule, m_canvas, aDC, GR_XOR, true );
 
     // Delete drag list
     EraseDragList();

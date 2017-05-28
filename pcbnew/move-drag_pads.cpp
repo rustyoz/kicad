@@ -19,6 +19,9 @@
 #include <pcbnew.h>
 #include <drag.h>
 
+#include "trackitems/trackitems.h"
+static PICKED_ITEMS_LIST pick_list;
+
 
 static D_PAD*  s_CurrentSelectedPad;
 static wxPoint Pad_OldPos;
@@ -40,6 +43,17 @@ static void Abort_Move_Pad( EDA_DRAW_PANEL* Panel, wxDC* DC )
     pad->SetPosition( Pad_OldPos );
     pad->Draw( Panel, DC, GR_XOR );
 
+    PCB_EDIT_FRAME* edit_frame = static_cast<PCB_EDIT_FRAME*>( Panel->GetParent() );
+    BOARD* pcb = edit_frame->GetBoard();
+    pcb->TrackItems()->Teardrops()->UpdateListClear();
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    for( unsigned jj=0 ; jj < g_DragSegmentList.size(); jj++ )
+    {
+        TRACK* tr = g_DragSegmentList[jj].m_Track;
+        if(dynamic_cast<ROUNDEDCORNERTRACK*>(tr))
+            pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( tr );
+    }
+    
     // Pad move in progress: restore origin of dragged tracks, if any.
     for( unsigned ii = 0; ii < g_DragSegmentList.size(); ii++ )
     {
@@ -49,7 +63,14 @@ static void Abort_Move_Pad( EDA_DRAW_PANEL* Panel, wxDC* DC )
         track->ClearFlags();
         g_DragSegmentList[ii].RestoreInitialValues();
         track->Draw( Panel, DC, GR_OR );
+        pcb->TrackItems()->Teardrops()->UpdateListAdd(track);
     }
+    if( !g_DragSegmentList.size() )
+        pcb->TrackItems()->Teardrops()->Recreate( pad, false );
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo();
+    pcb->TrackItems()->Teardrops()->UpdateListAdd( pcb->TrackItems()->RoundedTracksCorners()->UpdateList_GetUpdatedTracks() );
+    pcb->TrackItems()->Teardrops()->UpdateListDo();       
+    Panel->Refresh();
 
     EraseDragList();
     s_CurrentSelectedPad = NULL;
@@ -73,17 +94,35 @@ static void Show_Pad_Move( EDA_DRAW_PANEL* aPanel, wxDC* aDC, const wxPoint& aPo
     pad->SetPosition( aPanel->GetParent()->GetCrossHairPosition() );
     pad->Draw( aPanel, aDC, GR_XOR );
 
+    BOARD * pcb = static_cast<PCB_EDIT_FRAME*>(aPanel->GetParent())->GetBoard();
+    pcb->TrackItems()->Teardrops()->UpdateListClear();
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    for( unsigned ii = 0; ii < g_DragSegmentList.size(); ii++ )
+    {
+        TRACK* tr = g_DragSegmentList[ii].m_Track;
+        if(dynamic_cast<ROUNDEDCORNERTRACK*>(tr))
+            pcb->TrackItems()->RoundedTracksCorners()->UpdateListAdd( tr );
+    }
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateList_DrawTracks( aPanel, aDC, GR_XOR );
+
     for( unsigned ii = 0; ii < g_DragSegmentList.size(); ii++ )
     {
         Track = g_DragSegmentList[ii].m_Track;
 
+        if( !dynamic_cast<ROUNDEDCORNERTRACK*>(Track) )
         if( aErase )
             Track->Draw( aPanel, aDC, GR_XOR );
 
         g_DragSegmentList[ii].SetTrackEndsCoordinates( wxPoint(0, 0) );
 
+        pcb->TrackItems()->Teardrops()->UpdateListAdd( Track );
+        if( !dynamic_cast<ROUNDEDCORNERTRACK*>(Track) )
         Track->Draw( aPanel, aDC, GR_XOR );
     }
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateListDo( aPanel, aDC, GR_XOR, true );
+    pcb->TrackItems()->RoundedTracksCorners()->UpdateList_DrawTracks( aPanel, aDC, GR_XOR );
+    pcb->TrackItems()->Teardrops()->UpdateListAdd( pcb->TrackItems()->RoundedTracksCorners()->UpdateList_GetUpdatedTracks() );
+    pcb->TrackItems()->Teardrops()->UpdateListDo( aPanel, aDC, GR_XOR, true );       
 }
 
 
@@ -107,13 +146,28 @@ void PCB_BASE_FRAME::StartMovePad( D_PAD* aPad, wxDC* aDC, bool aDragConnectedTr
 
     EraseDragList();
 
+    pick_list.ClearItemsList();
+ 
     // Build the list of track segments to drag if the command is a drag pad
     if( aDragConnectedTracks )
     {
         DRAG_LIST drglist( GetBoard() );
         drglist.BuildDragListe( aPad );
+        
+        ITEM_PICKER itemWrapper( NULL, UR_CHANGED );
+        for( unsigned ii = 0; ii < g_DragSegmentList.size(); ii++ )
+        {
+            TRACK* segm = g_DragSegmentList[ii].m_Track;
+            itemWrapper.SetItem( segm );
+            itemWrapper.SetLink( segm->Clone() );
+            itemWrapper.GetLink()->SetState( IN_EDIT, false );
+            pick_list.PushItem( itemWrapper );
+        }
+
         UndrawAndMarkSegmentsToDrag( m_canvas, aDC );
     }
+    else
+        GetBoard()->TrackItems()->Teardrops()->Remove( aPad, false, true );
 }
 
 
@@ -129,23 +183,7 @@ void PCB_BASE_FRAME::PlacePad( D_PAD* aPad, wxDC* DC )
     MODULE* module = aPad->GetParent();
 
     ITEM_PICKER       picker( NULL, UR_CHANGED );
-    PICKED_ITEMS_LIST pickList;
 
-    // Save dragged track segments in undo list
-    for( unsigned ii = 0; ii < g_DragSegmentList.size(); ii++ )
-    {
-        track = g_DragSegmentList[ii].m_Track;
-
-        // Set the old state
-        if( g_DragSegmentList[ii].m_Pad_Start )
-            track->SetStart( Pad_OldPos );
-
-        if( g_DragSegmentList[ii].m_Pad_End )
-            track->SetEnd( Pad_OldPos );
-
-        picker.SetItem( track );
-        pickList.PushItem( picker );
-    }
 
     // Save old module and old items values
     aPad->ClearFlags();
@@ -154,13 +192,13 @@ void PCB_BASE_FRAME::PlacePad( D_PAD* aPad, wxDC* DC )
     aPad->SetPosition( Pad_OldPos );
 
     if( g_DragSegmentList.size() == 0 )
-        SaveCopyInUndoList( module, UR_CHANGED );
-    else
     {
-        picker.SetItem( module );
-        pickList.PushItem( picker );
-        SaveCopyInUndoList( pickList, UR_CHANGED );
+        GetBoard()->TrackItems()->Teardrops()->Recreate( aPad, false );
+        GetBoard()->TrackItems()->Teardrops()->Remove( aPad, &pick_list, true );
     }
+    picker.SetItem( module );
+    pick_list.PushItem( picker );
+    SaveCopyInUndoList( pick_list, UR_CHANGED );
 
     aPad->SetPosition( pad_curr_position );
     aPad->Draw( m_canvas, DC, GR_XOR );
@@ -170,6 +208,7 @@ void PCB_BASE_FRAME::PlacePad( D_PAD* aPad, wxDC* DC )
     {
         track = g_DragSegmentList[ii].m_Track;
 
+        g_DragSegmentList[ii].SetTrackEndsCoordinates( wxPoint(0, 0) );
         // Set the new state
         if( g_DragSegmentList[ii].m_Pad_Start )
             track->SetStart( aPad->GetPosition() );
@@ -198,6 +237,9 @@ void PCB_BASE_FRAME::PlacePad( D_PAD* aPad, wxDC* DC )
 
     if( DC )
         aPad->Draw( m_canvas, DC, GR_OR );
+
+    GetBoard()->TrackItems()->Teardrops()->Update( aPad, m_canvas, DC, GR_XOR, true );
+    m_canvas->Refresh();
 
     module->CalculateBoundingBox();
     module->SetLastEditTime();

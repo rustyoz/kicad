@@ -849,6 +849,11 @@ class SHAPE_POLY_SET : public SHAPE
         ///> Returns true if a given subpolygon contains the point aP. If aSubpolyIndex < 0
         ///> (default value), checks all polygons in the set
         bool Contains( const VECTOR2I& aP, int aSubpolyIndex = -1 ) const;
+        
+
+        //Acts same way as Contains, but return POLYGON if true.
+        const POLYGON* GetPolygon( const VECTOR2I& aP, int aSubpolyIndex = -1 ) const;
+
 
         ///> Returns true if the set is empty (no polygons at all)
         bool IsEmpty() const

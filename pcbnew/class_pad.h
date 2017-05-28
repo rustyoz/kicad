@@ -105,6 +105,7 @@ public:
 
     D_PAD* Next() const       { return static_cast<D_PAD*>( Pnext ); }
 
+    void SetParent( EDA_ITEM* aParent ); //Hide EDA_ITEM SetParent.
     MODULE* GetParent() const { return (MODULE*) m_Parent; }
 
     /**
@@ -580,8 +581,14 @@ public:
     virtual void Show( int nestLevel, std::ostream& os ) const override { ShowDummy( os ); }
 #endif
 
+     int GetIDNumber(void) const { return m_id_number; }
+
 
 private:
+    
+    //ID number. To MODULE copy for, that we do not change PAD(s) address.
+    int m_id_number; 
+    
     /**
      * Function boundingRadius
      * returns a calculated radius of a bounding circle for this pad.

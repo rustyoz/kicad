@@ -1260,6 +1260,32 @@ bool SHAPE_POLY_SET::containsSingle( const VECTOR2I& aP, int aSubpolyIndex ) con
 }
 
 
+const SHAPE_POLY_SET::POLYGON* SHAPE_POLY_SET::GetPolygon( const VECTOR2I& aP, int aSubpolyIndex ) const
+{
+    if( m_polys.size() == 0 ) // empty set?
+        return nullptr;
+
+    if( aSubpolyIndex >= 0 )
+    {
+        if( pointInPolygon( aP, m_polys[aSubpolyIndex][0] ) )
+            return &m_polys[aSubpolyIndex];
+        else 
+            return nullptr;
+    }
+
+    for( const POLYGON& polys : m_polys )
+    {
+        if( polys.size() == 0 )
+            continue;
+
+        if( pointInPolygon( aP, polys[0] ) )
+            return &polys;
+    }
+
+    return nullptr;
+}
+
+
 bool SHAPE_POLY_SET::pointInPolygon( const VECTOR2I& aP, const SHAPE_LINE_CHAIN& aPath ) const
 {
     int result = 0;

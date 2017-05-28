@@ -40,6 +40,8 @@
 #include <pcbnew.h>
 #include <protos.h>
 
+#include "trackitems/trackitems.h"
+
 
 static void ListSetState( EDA_ITEM* Start, int NbItem, STATUS_FLAGS State,
                           bool onoff );
@@ -83,6 +85,9 @@ int PCB_EDIT_FRAME::EraseRedundantTrack( wxDC*              aDC,
      * segments, and does not characterize track.
      */
     if( aNewTrack->Type() == PCB_VIA_T && ( aNewTrackSegmentsCount > 1 ) )
+        aNewTrack = aNewTrack->Next();
+
+    if( (aNewTrack->Type() == PCB_TEARDROP_T) && (aNewTrackSegmentsCount > 1) && (aNewTrack->Next()) )
         aNewTrack = aNewTrack->Next();
 
     aNewTrack = GetBoard()->MarkTrace( aNewTrack, &aNewTrackSegmentsCount, NULL, NULL, true );
@@ -188,7 +193,7 @@ int PCB_EDIT_FRAME::EraseRedundantTrack( wxDC*              aDC,
         if( pt_segm == NULL )
             break;
 
-        if( pt_segm->Type() != PCB_VIA_T )
+        if(pt_segm->Type() == PCB_TRACE_T) //Only TRACKs, not derived classes.
         {
             if( pt_segm->GetState( IS_LINKED ) == 0 )
             {
@@ -264,6 +269,8 @@ int PCB_EDIT_FRAME::EraseRedundantTrack( wxDC*              aDC,
 
                     if( aItemsListPicker )
                     {
+                        GetBoard()->TrackItems()->Teardrops()->Remove( pt_del, aItemsListPicker, true );
+                        GetBoard()->TrackItems()->RoundedTracksCorners()->Remove( pt_del, aItemsListPicker, true );
                         pt_del->UnLink();
                         pt_del->SetStatus( 0 );
                         pt_del->ClearFlags();

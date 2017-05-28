@@ -51,6 +51,8 @@ using namespace std::placeholders;
 #include <tool/tool_manager.h>
 
 #include <view/view.h>
+#include "trackitems/trackitems.h"
+
 
 /* Functions to undo and redo edit commands.
  *  commands to undo are stored in CurrentScreen->m_UndoList
@@ -388,6 +390,10 @@ void PCB_BASE_EDIT_FRAME::PutDataInPreviousState( PICKED_ITEMS_LIST* aList, bool
     // Undo in the reverse order of list creation: (this can allow stacked changes
     // like the same item can be changes and deleted in the same complex command
 
+    GetBoard()->TrackItems()->Teardrops()->UpdateListClear();
+    GetBoard()->TrackItems()->RoundedTracksCorners()->UpdateListClear();
+    MODULE* tears_module = nullptr;
+
     bool build_item_list = true;    // if true the list of existing items must be rebuilt
 
     // Restore changes in reverse order
@@ -433,6 +439,7 @@ void PCB_BASE_EDIT_FRAME::PutDataInPreviousState( PICKED_ITEMS_LIST* aList, bool
         switch( item->Type() )
         {
         case PCB_MODULE_T:
+            tears_module =  static_cast<MODULE*>( item );
             deep_reBuild_ratsnest = true;   // Pointers on pads can be invalid
             // Fall through
         case PCB_ZONE_AREA_T:
@@ -446,6 +453,16 @@ void PCB_BASE_EDIT_FRAME::PutDataInPreviousState( PICKED_ITEMS_LIST* aList, bool
             deep_reBuild_ratsnest = true;
             break;
 
+        case PCB_TEARDROP_T:
+            if( tears_module && (dynamic_cast<TrackNodeItem::TEARDROP_PAD*>(item)) )
+                GetBoard()->TrackItems()->Teardrops()->ChangePad( static_cast<TrackNodeItem::TEARDROP_PAD*>(item), tears_module );
+            GetBoard()->TrackItems()->Teardrops()->UpdateListAdd( static_cast<TrackNodeItem::TEARDROP*>(item) );
+            break;
+
+        case PCB_ROUNDEDTRACKSCORNER_T:
+            GetBoard()->TrackItems()->RoundedTracksCorners()->UpdateListAdd( static_cast<TRACK*>(item) );
+            break;
+
         default:
             break;
         }
@@ -453,6 +470,7 @@ void PCB_BASE_EDIT_FRAME::PutDataInPreviousState( PICKED_ITEMS_LIST* aList, bool
         // It is possible that we are going to replace the selected item, so clear it
         SetCurItem( NULL );
 
+        GetBoard()->TrackItems()->RoundedTracksCorners()->UpdateListAdd( static_cast<TRACK*>(item) );
         switch( aList->GetPickedItemStatus( ii ) )
         {
         case UR_CHANGED:    /* Exchange old and new data for each item */
@@ -471,6 +489,8 @@ void PCB_BASE_EDIT_FRAME::PutDataInPreviousState( PICKED_ITEMS_LIST* aList, bool
             ratsnest->Remove( item );
 
             item->SwapData( image );
+
+            GetBoard()->TrackItems()->Teardrops()->Update( item );
 
             // Update all pads/drawings/texts, as they become invalid
             // for the VIEW after SwapData() called for modules
@@ -498,6 +518,11 @@ void PCB_BASE_EDIT_FRAME::PutDataInPreviousState( PICKED_ITEMS_LIST* aList, bool
                 module->RunOnChildren( std::bind( &KIGFX::VIEW::Remove, view, _1 ) );
             }
 
+            if(dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(item))
+            {    
+                dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(item)->ResetVisibleEndpoints();
+                dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(item)->ReleaseTrackSegs();
+            }
             view->Remove( item );
             break;
 
@@ -511,6 +536,11 @@ void PCB_BASE_EDIT_FRAME::PutDataInPreviousState( PICKED_ITEMS_LIST* aList, bool
                 module->RunOnChildren( std::bind( &KIGFX::VIEW::Add, view, _1, -1 ) );
             }
 
+            if(dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(item))
+            {
+                dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(item)->ConnectTrackSegs();
+                dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(item)->ResetVisibleEndpoints();
+            }
             view->Add( item );
             build_item_list = true;
             break;
@@ -551,6 +581,10 @@ void PCB_BASE_EDIT_FRAME::PutDataInPreviousState( PICKED_ITEMS_LIST* aList, bool
         break;
         }
     }
+
+    GetBoard()->TrackItems()->RoundedTracksCorners()->UpdateListDo_UndoRedo();
+    GetBoard()->TrackItems()->Teardrops()->UpdateListAdd( GetBoard()->TrackItems()->RoundedTracksCorners()->UpdateList_GetUpdatedTracks() );
+    GetBoard()->TrackItems()->Teardrops()->UpdateListDo_UndoRedo();
 
     if( not_found )
         wxMessageBox( wxT( "Incomplete undo/redo operation: some items not found" ) );
@@ -624,6 +658,13 @@ void BOARD_ITEM::SwapData( BOARD_ITEM* aImage )
 
     case PCB_DIMENSION_T:
         std::swap( *((DIMENSION*)this), *((DIMENSION*)aImage) );
+        break;
+
+    case PCB_TEARDROP_T:
+        std::swap( *((TrackNodeItem::TEARDROP*) this), *((TrackNodeItem::TEARDROP*) aImage) );
+        break;
+    case PCB_ROUNDEDTRACKSCORNER_T:
+        std::swap( *((TrackNodeItem::ROUNDEDTRACKSCORNER*) this), *((TrackNodeItem::ROUNDEDTRACKSCORNER*) aImage) );
         break;
 
     case PCB_ZONE_T:

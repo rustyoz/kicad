@@ -40,6 +40,10 @@
 #include <gal/graphics_abstraction_layer.h>
 #include <convert_basic_shapes_to_polygon.h>
 
+#include "trackitems/teardrops.h"
+#include "trackitems/roundedtrackscorner.h"
+#include "trackitems/roundedcornertrack.h"
+
 using namespace KIGFX;
 
 PCB_RENDER_SETTINGS::PCB_RENDER_SETTINGS()
@@ -306,6 +310,20 @@ bool PCB_PAINTER::Draw( const VIEW_ITEM* aItem, int aLayer )
         draw( static_cast<const MARKER_PCB*>( item ) );
         break;
 
+    case PCB_TEARDROP_T:
+        dynamic_cast<TrackNodeItem::TEARDROP*>(const_cast<EDA_ITEM*>(item))->Draw( m_gal, 
+                                                                              &m_pcbSettings, 
+                                                                              m_pcbSettings.m_outlineWidth, 
+                                                                              aLayer );
+        break;
+        
+    case PCB_ROUNDEDTRACKSCORNER_T:
+        dynamic_cast<TrackNodeItem::ROUNDEDTRACKSCORNER*>(const_cast<EDA_ITEM*>(item))->Draw( m_gal, 
+                                                                              &m_pcbSettings, 
+                                                                              m_pcbSettings.m_outlineWidth, 
+                                                                              aLayer );
+        break;
+
     default:
         // Painter does not know how to draw the object
         return false;
@@ -321,6 +339,12 @@ void PCB_PAINTER::draw( const TRACK* aTrack, int aLayer )
     VECTOR2D end( aTrack->GetEnd() );
     int      width = aTrack->GetWidth();
 
+    if(dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(aTrack)))
+    {
+        start = VECTOR2D(dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(aTrack))->GetStartVisible());
+        end = VECTOR2D(dynamic_cast<ROUNDEDCORNERTRACK*>(const_cast<TRACK*>(aTrack))->GetEndVisible());
+    }
+        
     if( m_pcbSettings.m_netNamesOnTracks && IsNetnameLayer( aLayer ) )
     {
         // If there is a net name - display it on the track

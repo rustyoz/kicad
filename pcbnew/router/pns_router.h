@@ -35,6 +35,7 @@
 #include "pns_item.h"
 #include "pns_itemset.h"
 #include "pns_node.h"
+#include "pns_placement_algo.h"
 
 namespace KIGFX
 {
@@ -162,6 +163,8 @@ public:
     const VECTOR2I      SnapToItem( ITEM* aItem, VECTOR2I aP, bool& aSplitsSegment );
 
     bool StartDragging( const VECTOR2I& aP, ITEM* aItem );
+
+    bool IsDragging( void ) const { return m_state == DRAG_SEGMENT; }
 
     void SetIterLimit( int aX ) { m_iterLimit = aX; }
     int GetIterLimit() const { return m_iterLimit; };

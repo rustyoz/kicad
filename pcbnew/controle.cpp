@@ -317,6 +317,23 @@ bool PCB_EDIT_FRAME::GeneralControl( wxDC* aDC, const wxPoint& aPosition, EDA_KE
     igridsize.x = KiROUND( gridSize.x );
     igridsize.y = KiROUND( gridSize.y );
 
+    //Force or release magnetism with SHIFT-Alt.
+    int magnetic_pad_option = g_MagneticPadOption;
+    int magnetic_track_option = g_MagneticTrackOption;
+    if( !aHotKey && wxGetKeyState( WXK_SHIFT ) && wxGetKeyState( WXK_ALT ) )
+    {
+        if( ((g_MagneticPadOption == CAPTURE_CURSOR_IN_TRACK_TOOL) && (GetToolId() == ID_TRACK_BUTT)) 
+            || (g_MagneticPadOption == CAPTURE_ALWAYS) )
+            g_MagneticPadOption = NO_EFFECT;
+        else
+            g_MagneticPadOption = CAPTURE_ALWAYS;
+        if( ((g_MagneticTrackOption == CAPTURE_CURSOR_IN_TRACK_TOOL) && (GetToolId() == ID_TRACK_BUTT)) 
+            || (g_MagneticTrackOption == CAPTURE_ALWAYS) )
+            g_MagneticTrackOption = NO_EFFECT;
+        else
+            g_MagneticTrackOption = CAPTURE_ALWAYS;
+    }
+
     if( Magnetize( this, GetToolId(), igridsize, curs_pos, &pos ) )
     {
         SetCrossHairPosition( pos, false );
@@ -333,6 +350,10 @@ bool PCB_EDIT_FRAME::GeneralControl( wxDC* aDC, const wxPoint& aPosition, EDA_KE
             SetCrossHairPosition( curs_pos, snapToGrid );
         }
     }
+
+    //Magenetic options back to current state.
+    g_MagneticPadOption = magnetic_pad_option;
+    g_MagneticTrackOption = magnetic_track_option;
 
     RefreshCrossHair( oldpos, aPosition, aDC );
 

@@ -47,6 +47,9 @@
 #include <polygon_test_point_inside.h>
 #include <convert_basic_shapes_to_polygon.h>
 
+#include "trackitems/trackitems.h"
+#include "trackitems/roundedcornertrack.h"
+
 
 /* compare 2 convex polygons and return true if distance > aDist
  * i.e if for each edge of the first polygon distance from each edge of the other polygon
@@ -156,6 +159,13 @@ bool DRC::doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool testPads )
     layerMask    = aRefSeg->GetLayerSet();
     net_code_ref = aRefSeg->GetNetCode();
 
+    //RoundedCornerTracks
+    if(dynamic_cast<ROUNDEDCORNERTRACK*>(aRefSeg))
+    {
+        origin = dynamic_cast<ROUNDEDCORNERTRACK*>(aRefSeg)->GetStartVisible();
+        m_segmEnd   = delta = dynamic_cast<ROUNDEDCORNERTRACK*>(aRefSeg)->GetEndVisible() - origin;
+    }
+    
     // Phase 0 : Test vias
     if( aRefSeg->Type() == PCB_VIA_T )
     {
@@ -230,6 +240,11 @@ bool DRC::doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool testPads )
     }
     else    // This is a track segment
     {
+        //Test teardrop first.
+        if( aRefSeg->Type() == PCB_TEARDROP_T )
+            m_pcb->TrackItems()->Teardrops()->DRC_Rules(static_cast<TrackNodeItem::TEARDROP*>(aRefSeg), this);
+        else
+            //roundedtrackscorners may use tracks rule check
         if( aRefSeg->GetWidth() < dsnSettings.m_TrackMinWidth )
         {
             m_currentMarker = fillMarker( aRefSeg, NULL,
@@ -299,6 +314,14 @@ bool DRC::doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool testPads )
 
                 m_padToTestPos = dummypad.GetPosition() - origin;
 
+                if( !m_pcb->TrackItems()->Teardrops()->DRC_Clearance( aRefSeg, static_cast<D_PAD*>(&dummypad), 
+                                                        netclass->GetClearance(), this) )
+                    return false;
+                if( !m_pcb->TrackItems()->RoundedTracksCorners()->DRC_Clearance( aRefSeg, static_cast<D_PAD*>(&dummypad), 
+                                                        netclass->GetClearance(), this) )
+                    return false;
+                if(!dynamic_cast<TrackNodeItem::TRACKNODEITEM*>(aRefSeg))
+
                 if( !checkClearanceSegmToPad( &dummypad, aRefSeg->GetWidth(),
                                               netclass->GetClearance() ) )
                 {
@@ -320,6 +343,15 @@ bool DRC::doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool testPads )
             shape_pos = pad->ShapePos();
             m_padToTestPos = shape_pos - origin;
 
+            if( !m_pcb->TrackItems()->Teardrops()->DRC_Clearance( aRefSeg, static_cast<D_PAD*>(pad), 
+                                                    aRefSeg->GetClearance( pad ), this) )
+                return false;
+            if( !m_pcb->TrackItems()->RoundedTracksCorners()->DRC_Clearance( aRefSeg, static_cast<D_PAD*>(pad), 
+                                                    aRefSeg->GetClearance( pad ), this) )
+                return false;
+            
+            if(!dynamic_cast<TrackNodeItem::TRACKNODEITEM*>(aRefSeg))
+            
             if( !checkClearanceSegmToPad( pad, aRefSeg->GetWidth(), aRefSeg->GetClearance( pad ) ) )
             {
                 m_currentMarker = fillMarker( aRefSeg, pad,
@@ -360,12 +392,33 @@ bool DRC::doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool testPads )
         // slightly decrease the w_dist (remove one nanometer is enough !)
         w_dist -= 1;
 
+        //Test teardrops.
+        if( (aRefSeg->Type() == PCB_TEARDROP_T) || (track->Type() == PCB_TEARDROP_T) )
+        {
+            if( !m_pcb->TrackItems()->Teardrops()->DRC_Clearance(aRefSeg, track, w_dist, this) )
+                return false;
+            continue;
+        }
+        if( (aRefSeg->Type() == PCB_ROUNDEDTRACKSCORNER_T) || (track->Type() == PCB_ROUNDEDTRACKSCORNER_T) )
+        {
+            if( !m_pcb->TrackItems()->RoundedTracksCorners()->DRC_Clearance(aRefSeg, track, w_dist, this) )
+                return false;
+            continue;
+        }
+
         // If the reference segment is a via, we test it here
         if( aRefSeg->Type() == PCB_VIA_T )
         {
             delta = track->GetEnd() - track->GetStart();
             segStartPoint = aRefSeg->GetStart() - track->GetStart();
 
+            //RoundedCornerTracks
+            if(dynamic_cast<ROUNDEDCORNERTRACK*>(track))
+            {
+                delta = dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetEndVisible() - dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetStartVisible();
+                segStartPoint = aRefSeg->GetStart() - dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetStartVisible();
+            }
+    
             if( track->Type() == PCB_VIA_T )
             {
                 // Test distance between two vias, i.e. two circles, trivial case
@@ -402,6 +455,14 @@ bool DRC::doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool testPads )
          */
         segStartPoint = track->GetStart() - origin;
         segEndPoint   = track->GetEnd() - origin;
+
+        //RoundedCornerTracks
+        if(dynamic_cast<ROUNDEDCORNERTRACK*>(track))
+        {
+            segStartPoint = dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetStartVisible() - origin;
+            segEndPoint = dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetEndVisible() - origin;
+        }
+    
         RotatePoint( &segStartPoint, m_segmAngle );
         RotatePoint( &segEndPoint, m_segmAngle );
         if( track->Type() == PCB_VIA_T )
@@ -544,6 +605,13 @@ bool DRC::doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool testPads )
                     // Test the starting and the ending point
                     segStartPoint = track->GetStart();
                     segEndPoint   = track->GetEnd();
+
+                    //RoundedCornerTracks
+                    if(dynamic_cast<ROUNDEDCORNERTRACK*>(track))
+                    {
+                        segStartPoint = dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetStartVisible();
+                        segEndPoint = dynamic_cast<ROUNDEDCORNERTRACK*>(track)->GetEndVisible();
+                    }
                     delta = segEndPoint - segStartPoint;
 
                     // Compute the segment orientation (angle) en 0,1 degre
@@ -558,6 +626,13 @@ bool DRC::doTrackDrc( TRACK* aRefSeg, TRACK* aStart, bool testPads )
                     wxPoint relStartPos = aRefSeg->GetStart() - segStartPoint;
                     wxPoint relEndPos   = aRefSeg->GetEnd() - segStartPoint;
 
+                    //RoundedCornerTracks
+                    if(dynamic_cast<ROUNDEDCORNERTRACK*>(aRefSeg))
+                    {
+                        relStartPos = dynamic_cast<ROUNDEDCORNERTRACK*>(aRefSeg)->GetStartVisible() - segStartPoint;
+                        relEndPos = dynamic_cast<ROUNDEDCORNERTRACK*>(aRefSeg)->GetEndVisible() - segStartPoint;
+                    }
+    
                     RotatePoint( &relStartPos, angle );
                     RotatePoint( &relEndPos, angle );
 

@@ -48,6 +48,8 @@
 #include <collectors.h>
 #include <menus_helpers.h>
 
+#include "trackitems/trackitems.h"
+
 
 static wxMenu* Append_Track_Width_List( BOARD* aBoard );
 
@@ -100,6 +102,10 @@ bool PCB_EDIT_FRAME::OnRightClick( const wxPoint& aMousePos, wxMenu* aPopMenu )
         }
     }
 
+    if( GetBoard()->TrackItems()->Teardrops()->IsEditOn() || 
+        GetBoard()->TrackItems()->RoundedTracksCorners()->IsEditOn() )
+        return true;
+    
     // Select a proper item
 
     wxPoint cursorPos = GetCrossHairPosition();
@@ -399,6 +405,30 @@ bool PCB_EDIT_FRAME::OnRightClick( const wxPoint& aMousePos, wxMenu* aPopMenu )
                          _( "Select Working Layer" ), KiBitmap( select_w_layer_xpm ) );
             AddMenuItem( aPopMenu, ID_POPUP_PCB_SELECT_LAYER_PAIR,
                          _( "Select Layer Pair for Vias" ), KiBitmap( select_layer_pair_xpm ) );
+
+            //Via Stitching thermal vias.
+            msg = AddHotkeyName( _( "Place Through Via" ), g_Board_Editor_Hokeys_Descr,
+                                 HK_ADD_THROUGH_VIA );
+            AddMenuItem( aPopMenu, ID_POPUP_PCB_PLACE_ZONE_THROUGH_VIA, msg, KiBitmap( via_xpm ) );
+            if( GetDesignSettings().m_BlindBuriedViaAllowed )
+            {
+                msg = AddHotkeyName( _( "Place Blind/Buried Via" ),
+                                    g_Board_Editor_Hokeys_Descr, HK_ADD_BLIND_BURIED_VIA );
+                AddMenuItem( aPopMenu, ID_POPUP_PCB_PLACE_ZONE_BLIND_BURIED_VIA, 
+                             msg, KiBitmap( via_buried_xpm ) );
+            }
+            msg = AddHotkeyName( _( "Select Layer and Place Through Via" ),
+                                g_Board_Editor_Hokeys_Descr, HK_SEL_LAYER_AND_ADD_THROUGH_VIA );
+            AddMenuItem( aPopMenu, ID_POPUP_PCB_SEL_LAYER_AND_PLACE_ZONE_THROUGH_VIA,
+                        msg, KiBitmap( via_xpm ) );
+            if( GetDesignSettings().m_BlindBuriedViaAllowed )
+            {
+                msg = AddHotkeyName( _( "Select Layer Pair and Place Blind/Buried Via" ),
+                                    g_Board_Editor_Hokeys_Descr, HK_SEL_LAYER_AND_ADD_BLIND_BURIED_VIA );
+                AddMenuItem( aPopMenu, ID_POPUP_PCB_SEL_LAYERS_AND_PLACE_ZONE_BLIND_BURIED_VIA,
+                            msg, KiBitmap( via_buried_xpm ) );
+            }
+
             aPopMenu->AppendSeparator();
         }
         break;
@@ -636,6 +666,24 @@ void PCB_EDIT_FRAME::createPopupMenuForTracks( TRACK* Track, wxMenu* PopMenu )
     AddMenuItem( PopMenu, Append_Track_Width_List( GetBoard() ), ID_POPUP_PCB_SELECT_WIDTH,
                  _( "Select Track Width" ), KiBitmap( width_track_xpm ) );
 
+    if( !flags && (Track->Type() == PCB_VIA_T) )
+    {
+        msg = AddHotkeyName( _("Create Via Array" ), g_Board_Editor_Hokeys_Descr, HK_CREATE_ARRAY );
+        AddMenuItem( PopMenu, ID_POPUP_PCB_CREATE_VIA_ARRAY, msg, KiBitmap( via_xpm ) );
+    }
+    
+    if( !flags )
+        GetBoard()->TrackItems()->Popup_PickTrackOrViaWidth( PopMenu, Track );
+    if(((Track->Type() == PCB_VIA_T) && dynamic_cast<VIA*>(Track)->GetThermalCode()))
+    {
+        
+    }
+    else
+    {
+        GetBoard()->TrackItems()->Teardrops()->Popup( PopMenu, Track, cursorPosition );
+        GetBoard()->TrackItems()->RoundedTracksCorners()->Popup( PopMenu, Track, cursorPosition );
+    }
+
     // Delete control:
     PopMenu->AppendSeparator();
     wxMenu* trackdel_mnu = new wxMenu;
@@ -826,6 +874,8 @@ void PCB_EDIT_FRAME::createPopUpMenuForFootprints( MODULE* aModule, wxMenu* menu
         AddMenuItem( sub_menu_footprint, ID_POPUP_PCB_EDIT_MODULE_WITH_MODEDIT,
                      msg, KiBitmap( module_editor_xpm ) );
 
+        GetBoard()->TrackItems()->Teardrops()->Popup( sub_menu_footprint, aModule );
+        
         sub_menu_footprint->AppendSeparator();
 
         msg = AddHotkeyName( _( "Delete Footprint" ),
@@ -939,6 +989,9 @@ void PCB_EDIT_FRAME::createPopUpMenuForFpPads( D_PAD* Pad, wxMenu* menu )
 
     msg = AddHotkeyName( _( "Edit Pad" ), g_Board_Editor_Hokeys_Descr, HK_EDIT_ITEM );
     AddMenuItem( sub_menu_Pad, ID_POPUP_PCB_EDIT_PAD, msg, KiBitmap( options_pad_xpm ) );
+
+    GetBoard()->TrackItems()->Teardrops()->Popup( sub_menu_Pad, Pad );
+    
     sub_menu_Pad->AppendSeparator();
 
     AddMenuItem( sub_menu_Pad, ID_POPUP_PCB_COPY_PAD_SETTINGS,

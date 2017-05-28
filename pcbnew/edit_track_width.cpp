@@ -38,6 +38,8 @@
 #include <pcbnew.h>
 #include <drc_stuff.h>
 
+#include "trackitems/trackitems.h"
+
 
 bool PCB_EDIT_FRAME::SetTrackSegmentWidth( TRACK*             aTrackItem,
                                            PICKED_ITEMS_LIST* aItemsListPicker,
@@ -182,6 +184,12 @@ void PCB_EDIT_FRAME::Edit_TrackSegm_Width( wxDC* aDC, TRACK* aTrackItem )
     if( change == 0 || aTrackItem->GetFlags() )
         return;     // No change
 
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Remove( aTrackItem, &itemsListPicker, true);
+    GetBoard()->TrackItems()->Teardrops()->Repopulate( aTrackItem->GetNetCode(),
+                                         TEARDROPS::JUNCTIONS_AND_TJUNCTIONS_T, 
+                                         &itemsListPicker );
+    GetBoard()->TrackItems()->Teardrops()->Refresh( aTrackItem );
+    
     // The segment has changed: redraw it and save it in undo list
     if( aDC )
     {
@@ -211,21 +219,29 @@ void PCB_EDIT_FRAME::Edit_Track_Width( wxDC* aDC, TRACK* aTrackSegment )
     if( aTrackSegment == NULL )
         return;
 
-    pt_track = GetBoard()->MarkTrace( aTrackSegment, &nb_segm, NULL, NULL, true );
-
     PICKED_ITEMS_LIST itemsListPicker;
     bool change = false;
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Remove( aTrackSegment->GetNetCode(), &itemsListPicker, true);
+    
+    pt_track = GetBoard()->MarkTrace( aTrackSegment, &nb_segm, NULL, NULL, true );
+
 
     for( int ii = 0; ii < nb_segm; ii++, pt_track = pt_track->Next() )
     {
         pt_track->SetState( BUSY, false );
 
         if( SetTrackSegmentWidth( pt_track, &itemsListPicker, false ) )
+        {
+            GetBoard()->TrackItems()->Teardrops()->Refresh( pt_track );
             change = true;
+        }            
     }
 
     if( !change )
+    {
+        PutDataInPreviousState(&itemsListPicker, false, false); //Removed corners
         return;
+    }
 
     // Some segment have changed: redraw them and save in undo list
     if( aDC )
@@ -235,6 +251,8 @@ void PCB_EDIT_FRAME::Edit_Track_Width( wxDC* aDC, TRACK* aTrackSegment )
         for( unsigned ii = 0; ii < itemsListPicker.GetCount(); ii++ )
         {
             TRACK* segm = (TRACK*) itemsListPicker.GetPickedItemLink( ii );
+            if(!segm)       //Removed corner.
+                continue;
             segm->Draw( m_canvas, aDC, GR_XOR );            // Erase old track shape
             segm = (TRACK*) itemsListPicker.GetPickedItem( ii );
             segm->Draw( m_canvas, aDC, GR_OR );             // Display new track shape
@@ -245,6 +263,8 @@ void PCB_EDIT_FRAME::Edit_Track_Width( wxDC* aDC, TRACK* aTrackSegment )
 
         m_canvas->CrossHairOn( aDC );                   // Display cursor shape
     }
+
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Recreate( aTrackSegment->GetNetCode(), &itemsListPicker);
 
     SaveCopyInUndoList( itemsListPicker, UR_CHANGED );
 }

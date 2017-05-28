@@ -50,6 +50,8 @@
 #include <zones.h>
 #include <pcb_parser.h>
 
+#include "trackitems/trackitems.h"
+
 using namespace PCB_KEYS_T;
 
 
@@ -536,6 +538,14 @@ BOARD* PCB_PARSER::parseBOARD_unchecked() throw( IO_ERROR, PARSE_ERROR )
             m_board->Add( parsePCB_TARGET(), ADD_APPEND );
             break;
 
+        case T_roundedtrackscorner:
+            m_board->TrackItems()->RoundedTracksCorners()->Parse( this );
+            break;
+
+        case T_teardrop:
+            m_board->TrackItems()->Teardrops()->Parse( this );
+            break;
+            
         default:
             wxString err;
             err.Printf( _( "unknown token \"%s\"" ), GetChars( FromUTF8() ) );
@@ -2562,6 +2572,7 @@ VIA* PCB_PARSER::parseVIA() throw( IO_ERROR, PARSE_ERROR )
 
     wxPoint pt;
     T token;
+    bool is_thermal = false;
 
     std::unique_ptr< VIA > via( new VIA( m_board ) );
 
@@ -2629,10 +2640,17 @@ VIA* PCB_PARSER::parseVIA() throw( IO_ERROR, PARSE_ERROR )
             NeedRIGHT();
             break;
 
+        case T_thermal:
+            is_thermal = true;
+            break;
+
         default:
-            Expecting( "blind, micro, at, size, drill, layers, net, tstamp, or status" );
+            Expecting( "blind, micro, at, size, drill, layers, net, tstamp, thermal, or status" );
         }
     }
+
+    if( is_thermal )
+        via->SetThermalCode( via->GetNetCode() );
 
     return via.release();
 }

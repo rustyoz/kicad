@@ -161,6 +161,10 @@ VIA::VIA( BOARD_ITEM* aParent ) :
     SetViaType( VIA_THROUGH );
     m_BottomLayer = B_Cu;
     SetDrillDefault();
+
+    m_thermal = 0; 
+    m_thermal_zones.clear();
+    m_thermal_polys_zones.clear();
 }
 
 
@@ -248,7 +252,7 @@ int VIA::GetDrillValue() const
 
 bool TRACK::IsNull()
 {
-    if( ( Type() != PCB_VIA_T ) && ( m_Start == m_End ) )
+    if( ( Type() == PCB_TRACE_T ) && ( m_Start == m_End ) ) //Only PCB_TRACE_T class.
         return true;
     else
         return false;
@@ -834,6 +838,11 @@ void VIA::Draw( EDA_DRAW_PANEL* panel, wxDC* aDC, GR_DRAWMODE aDrawMode, const w
         fillvia = false;
     }
 
+    if( ShowClearance( displ_opts, this ) )
+    {
+        GRCircle( panel->GetClipBox(), aDC, m_Start + aOffset, radius + GetClearance(), 0, color );
+    }
+
     if( fillvia )
     {
         GRFilledCircle( panel->GetClipBox(), aDC, m_Start + aOffset, radius, color );
@@ -960,6 +969,9 @@ void VIA::Draw( EDA_DRAW_PANEL* panel, wxDC* aDC, GR_DRAWMODE aDrawMode, const w
     NETINFO_ITEM* net = GetNet();
 
     if( net == NULL )
+        return;
+
+    if( !m_thermal )
         return;
 
     int len = net->GetShortNetname().Len();
@@ -1462,7 +1474,7 @@ int TRACK::GetEndSegments( int aCount, TRACK** aStartTrace, TRACK** aEndTrace )
 
     for( ; ( Track != NULL ) && ( ii < aCount ); ii++, Track = Track->Next() )
     {
-        if( Track->Type() == PCB_VIA_T )
+        if( Track->Type() != PCB_TRACE_T ) //All derived classes of TRACK, not only VIA.
             continue;
 
         layerMask = Track->GetLayerSet();

@@ -89,6 +89,7 @@ class PCB_EDIT_FRAME : public PCB_BASE_EDIT_FRAME
     /// The auxiliary right vertical tool bar used to access the microwave tools.
     wxAuiToolBar* m_microWaveToolBar;
 
+    wxMenu* m_TrackItemsMenu{nullptr};
 
 protected:
     PCB_LAYER_WIDGET* m_Layers;
@@ -325,6 +326,7 @@ public:
     void OnLayerColorChange( wxCommandEvent& aEvent );
     void OnConfigurePaths( wxCommandEvent& aEvent );
     void OnUpdatePCBFromSch( wxCommandEvent& event );
+    void OnUpdateSelectTeardrop( wxUpdateUIEvent& aEvent );
 
     /**
      * called when the alt key is pressed during a mouse wheel action

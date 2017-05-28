@@ -65,6 +65,46 @@ public:
         ANG_HALF_FULL   = 0x10,
         ANG_UNDEFINED   = 0x20
     };
+    
+private:
+    ///> our actual direction
+    Directions m_dir;
+
+    /**
+     * Function construct()
+     * Calculates the direction from a vector. If the vector's angle is not a multiple of 45
+     * degrees, the direction is rounded to the nearest octant.
+     * @param aVec our vector
+     */
+    void construct_( const VECTOR2I& aVec )
+    {
+        m_dir = UNDEFINED;
+
+        if( aVec.x == 0 && aVec.y == 0 )
+            return;
+
+        double mag = 360.0 - ( 180.0 / M_PI * atan2( (double) aVec.y, (double) aVec.x ) ) + 90.0;
+
+        if( mag >= 360.0 )
+            mag -= 360.0;
+
+        if( mag < 0.0 )
+            mag += 360.0;
+
+        int dir = ( mag + 22.5 ) / 45.0;
+
+        if( dir >= 8 )
+            dir = dir - 8;
+
+        if( dir < 0 )
+            dir = dir + 8;
+
+        m_dir = (Directions) dir;
+
+        return;
+    }
+
+public:
 
     DIRECTION_45( Directions aDir = UNDEFINED ) : m_dir( aDir ) {}
 
@@ -315,44 +355,9 @@ public:
         return 1 << ( (int) m_dir );
     }
 
-private:
 
-    /**
-     * Function construct()
-     * Calculates the direction from a vector. If the vector's angle is not a multiple of 45
-     * degrees, the direction is rounded to the nearest octant.
-     * @param aVec our vector
-     */
-    void construct_( const VECTOR2I& aVec )
-    {
-        m_dir = UNDEFINED;
 
-        if( aVec.x == 0 && aVec.y == 0 )
-            return;
 
-        double mag = 360.0 - ( 180.0 / M_PI * atan2( (double) aVec.y, (double) aVec.x ) ) + 90.0;
-
-        if( mag >= 360.0 )
-            mag -= 360.0;
-
-        if( mag < 0.0 )
-            mag += 360.0;
-
-        int dir = ( mag + 22.5 ) / 45.0;
-
-        if( dir >= 8 )
-            dir = dir - 8;
-
-        if( dir < 0 )
-            dir = dir + 8;
-
-        m_dir = (Directions) dir;
-
-        return;
-    }
-
-    ///> our actual direction
-    Directions m_dir;
 };
 
 #endif    // DIRECTION45_H

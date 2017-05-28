@@ -328,6 +328,27 @@ set( PCBNEW_CLASS_SRCS
     footprint_preview_panel.cpp
     )
 
+    set( PCBNEW_CLASS_SRCS
+        ${PCBNEW_CLASS_SRCS}
+        trackitems/tracknodeitems_pcbnew.cpp
+
+        trackitems/teardrops_pcbnew.cpp
+        trackitems/teardrops_pcbnew_DRC.cpp
+        trackitems/teardrops_pcbnew_menus.cpp
+        trackitems/teardrops_pcbnew_misc.cpp
+        trackitems/teardrops_pcbnew_commit.cpp
+
+        trackitems/roundedtrackscorners_pcbnew.cpp
+        trackitems/roundedtrackscorners_pcbnew_commit.cpp
+        trackitems/roundedtrackscorners_pcbnew_DRC.cpp
+        trackitems/roundedtrackscorners_pcbnew_menus.cpp
+        trackitems/roundedtrackscorners_pcbnew_misc.cpp
+
+        trackitems/trackitems_pcbnew.cpp
+
+        trackitems/viastitching_pcbnew.cpp
+    )
+
 set( PCBNEW_SRCS
     ${PCBNEW_AUTOROUTER_SRCS}
     ${PCBNEW_MICROWAVE_SRCS}

@@ -82,6 +82,8 @@
 #include <gal/graphics_abstraction_layer.h>
 #include <functional>
 
+#include "trackitems/trackitems.h"
+ 
 using namespace std::placeholders;
 
 ///@{
@@ -317,6 +319,9 @@ BEGIN_EVENT_TABLE( PCB_EDIT_FRAME, PCB_BASE_FRAME )
                          PCB_EDIT_FRAME::OnUpdateZoneDisplayStyle )
     EVT_UPDATE_UI_RANGE( ID_PCB_MUWAVE_START_CMD, ID_PCB_MUWAVE_END_CMD,
                          PCB_EDIT_FRAME::OnUpdateMuWaveToolbar )
+    EVT_UPDATE_UI_RANGE( ID_POPUP_PCB_TEARDROP_SELECT_TEARDROP,
+                         ID_POPUP_PCB_TEARDROP_SELECT_ZERO,
+                         PCB_EDIT_FRAME::OnUpdateSelectTeardrop )
 
     EVT_COMMAND( wxID_ANY, LAYER_WIDGET::EVT_LAYER_COLOR_CHANGE, PCB_EDIT_FRAME::OnLayerColorChange )
 END_EVENT_TABLE()
@@ -350,6 +355,7 @@ PCB_EDIT_FRAME::PCB_EDIT_FRAME( KIWAY* aKiway, wxWindow* aParent ) :
     SetGalCanvas( galCanvas );
 
     SetBoard( new BOARD() );
+    GetBoard()->TrackItems()->SetEditFrame( this, m_TrackItemsMenu );
 
     // Create the PCB_LAYER_WIDGET *after* SetBoard():
 
@@ -1192,3 +1198,5 @@ int PCB_EDIT_FRAME::InstallExchangeModuleFrame( MODULE* Module )
 
     return dialog.ShowQuasiModal();
 }
+
+

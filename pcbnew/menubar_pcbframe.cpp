@@ -40,6 +40,8 @@
 #include "pcbnew.h"
 #include "pcbnew_id.h"
 
+#include "trackitems/trackitems.h"
+
 
 // Build the place submenu
 static void preparePlaceMenu( wxMenu* aParentMenu );
@@ -173,6 +175,15 @@ void PCB_EDIT_FRAME::ReCreateMenuBar()
     // Populate the Action Plugin sub-menu
     RebuildActionPluginMenus();
 #endif
+
+    if( m_TrackItemsMenu )
+    {
+        delete m_TrackItemsMenu;
+        m_TrackItemsMenu = nullptr;
+    }
+    m_TrackItemsMenu = new wxMenu;
+    AddMenuItem( toolsMenu, m_TrackItemsMenu, ID_POPUP_PCB_TRACKITEMS_COMMON_MNU, 
+                 TRACKITEMS::TXT_TRACKITEMS, KiBitmap( add_tracks_xpm ) );    
 
 }
 

@@ -53,6 +53,10 @@
 #include <wx/progdlg.h>
 #include <board_commit.h>
 
+#include "trackitems/trackitems.h"
+#include "trackitems/viastitching.h"
+
+
 void DRC::ShowDRCDialog( wxWindow* aParent )
 {
     bool show_dlg_modal = true;
@@ -237,14 +241,6 @@ void DRC::RunTests( wxTextCtrl* aMessages )
         testPad2Pad();
     }
 
-    // test track and via clearances to other tracks, pads, and vias
-    if( aMessages )
-    {
-        aMessages->AppendText( _( "Track clearances...\n" ) );
-        wxSafeYield();
-    }
-
-    testTracks( aMessages ? aMessages->GetParent() : m_pcbEditorFrame, true );
 
     // Before testing segments and unconnected, refill all zones:
     // this is a good caution, because filled areas can be outdated.
@@ -265,6 +261,15 @@ void DRC::RunTests( wxTextCtrl* aMessages )
     }
 
     testZones();
+
+    // test track and via clearances to other tracks, pads, and vias
+    if( aMessages )
+    {
+        aMessages->AppendText( _( "Track clearances...\n" ) );
+        wxSafeYield();
+    }
+
+    testTracks( aMessages ? aMessages->GetParent() : m_pcbEditorFrame, true );
 
     // find and gather unconnected pads.
     if( m_doUnconnectedTest )
@@ -549,6 +554,9 @@ void DRC::testTracks( wxWindow *aActiveWindow, bool aShowProgressBar )
             addMarkerToPcb ( m_currentMarker );
             m_currentMarker = nullptr;
         }
+
+        //Test Thermal via.
+        m_pcb->ViaStitching()->RuleCheck( segm, this );
     }
 
     if( progressDialog )
@@ -750,6 +758,10 @@ void DRC::testTexts()
                     }
                 }
             }
+            else if( track->Type() == PCB_TEARDROP_T )
+                m_pcb->TrackItems()->Teardrops()->DRC_Clearance( track, text, min_dist, this );
+            else if( track->Type() == PCB_ROUNDEDTRACKSCORNER_T )
+                m_pcb->TrackItems()->RoundedTracksCorners()->DRC_Clearance( track, text, min_dist, this );
         }
 
         // Test pads

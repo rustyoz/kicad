@@ -43,6 +43,8 @@
 #include <pcbnew.h>
 #include <drc_stuff.h>
 
+#include "trackitems/trackitems.h"
+
 
 bool PCB_EDIT_FRAME::Other_Layer_Route( TRACK* aTrack, wxDC* DC )
 {
@@ -177,6 +179,8 @@ bool PCB_EDIT_FRAME::Other_Layer_Route( TRACK* aTrack, wxDC* DC )
 
     TRACK*  lastNonVia = g_CurrentTrackSegment;
 
+    GetBoard()->TrackItems()->Teardrops()->Add( g_CurrentTrackSegment, via, &g_CurrentTrackList );
+
     /* A new via was created. It was Ok.
      */
     g_CurrentTrackList.PushBack( via );
@@ -205,12 +209,20 @@ bool PCB_EDIT_FRAME::Other_Layer_Route( TRACK* aTrack, wxDC* DC )
 
     g_CurrentTrackList.PushBack( track );
 
+    if( g_Track_45_Only_Allowed )
+        GetBoard()->TrackItems()->Teardrops()->Add( g_CurrentTrackSegment, via, 
+                                      &g_CurrentTrackList, false );
+    
     if( g_TwoSegmentTrackBuild )
     {
         // Create a second segment (we must have 2 track segments to adjust)
         g_CurrentTrackList.PushBack( (TRACK*)g_CurrentTrackSegment->Clone() );
     }
 
+    if( !g_Track_45_Only_Allowed )
+        GetBoard()->TrackItems()->Teardrops()->Add( g_CurrentTrackSegment, via, 
+                                      &g_CurrentTrackList, false);
+    
     m_canvas->CallMouseCapture( DC, wxDefaultPosition, false );
     SetMsgPanel( via );
     UpdateStatusBar();

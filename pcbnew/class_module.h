@@ -661,7 +661,13 @@ public:
     virtual void Show( int nestLevel, std::ostream& os ) const override { ShowDummy( os ); }
 #endif
 
+    int GetPadIDCounter(void) const { return m_pad_id_counter; }
+    int GetAndAddPadIDCounter(void) { return ++m_pad_id_counter; } 
+    
 private:
+    
+    int m_pad_id_counter{0}; //Counter to set pad id number.
+    
     DLIST<D_PAD>      m_Pads;           ///< Linked list of pads.
     DLIST<BOARD_ITEM> m_Drawings;       ///< Linked list of graphical items.
     std::list<S3D_INFO> m_3D_Drawings;  ///< Linked list of 3D models.

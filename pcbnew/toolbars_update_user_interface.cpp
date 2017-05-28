@@ -40,6 +40,19 @@
 #include <drc_stuff.h>
 #include <class_pcb_layer_box_selector.h>
 
+#include "trackitems/trackitems.h"
+
+
+void PCB_EDIT_FRAME::OnUpdateSelectTeardrop( wxUpdateUIEvent& aEvent )
+{
+    int shapeID = 0;
+    if(GetBoard()->TrackItems()->Teardrops()->IsOn())
+        shapeID = GetBoard()->TrackItems()->Teardrops()->GetCurrentShape();
+
+    bool check = ( ( aEvent.GetId() - ID_POPUP_PCB_TEARDROP_SELECT_TEARDROP + 1 ) == shapeID );
+    aEvent.Check( check );
+}
+
 
 void PCB_EDIT_FRAME::OnUpdateLayerPair( wxUpdateUIEvent& aEvent )
 {

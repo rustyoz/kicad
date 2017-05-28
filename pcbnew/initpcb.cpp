@@ -35,6 +35,8 @@
 #include <pcbnew.h>
 #include <module_editor_frame.h>
 
+#include "trackitems/trackitems.h"
+
 
 bool PCB_EDIT_FRAME::Clear_Pcb( bool aQuery )
 {
@@ -60,6 +62,7 @@ bool PCB_EDIT_FRAME::Clear_Pcb( bool aQuery )
     // delete the old BOARD and create a new BOARD so that the default
     // layer names are put into the BOARD.
     SetBoard( new BOARD() );
+    GetBoard()->TrackItems()->SetEditFrame( this, m_TrackItemsMenu );
     SetElementVisibility( LAYER_GRID, showGrid );
     SetElementVisibility( LAYER_RATSNEST, showRats );
 

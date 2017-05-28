@@ -45,8 +45,8 @@
 
 #include <view/view.h>
 
-#define FORMAT_STRING _( "Filling zone %d out of %d (net %s)..." )
-
+#include "trackitems/viastitching.h"
+#define FORMAT_STRING _( "Filling zone %d out of %d (net %s) Pass %d/2 ..." ) //Via stitching: 
 
 /**
  * Function Delete_OldZone_Fill (obsolete)
@@ -138,9 +138,10 @@ int PCB_EDIT_FRAME::Fill_All_Zones( wxWindow * aActiveWindow, bool aVerbose )
     // with a correct size to show this long net name
     msg.Printf( FORMAT_STRING, 000, areaCount, wxT("XXXXXXXXXXXXXXXXX" ) );
 
+
     if( aActiveWindow )
         progressDialog = new wxProgressDialog( _( "Fill All Zones" ), msg,
-                                     areaCount+2, aActiveWindow,
+                                     areaCount*2+1, aActiveWindow,
                                      wxPD_AUTO_HIDE | wxPD_CAN_ABORT |
                                      wxPD_APP_MODAL | wxPD_ELAPSED_TIME );
     // Display the actual message
@@ -152,29 +153,44 @@ int PCB_EDIT_FRAME::Fill_All_Zones( wxWindow * aActiveWindow, bool aVerbose )
 
     int ii;
 
-    for( ii = 0; ii < areaCount; ii++ )
+    //Via Stitching: Set all thermal vias netcodes for recovering.
+    Compile_Ratsnest( nullptr, false );
+
+    int progressCount = 1;
+    for(int n = 0; n < 2; n++)     //Via Stitching: Fill pours twice.
     {
-        ZONE_CONTAINER* zoneContainer = GetBoard()->GetArea( ii );
-        if( zoneContainer->GetIsKeepout() )
-            continue;
-
-        msg.Printf( FORMAT_STRING, ii + 1, areaCount, GetChars( zoneContainer->GetNetname() ) );
-
-        if( progressDialog )
+        for( ii = 0; ii < areaCount; ii++ )
         {
-            if( !progressDialog->Update( ii+1, msg ) )
-                break;  // Aborted by user
+            ZONE_CONTAINER* zoneContainer = GetBoard()->GetArea( ii );
+            if( zoneContainer->GetIsKeepout() )
+                continue;
+
+            msg.Printf( FORMAT_STRING, ii + 1, areaCount, GetChars( zoneContainer->GetNetname() ), n+1 );
+
+            if( progressDialog )
+            {
+                if( !progressDialog->Update( progressCount++, msg ) )
+                    break;  // Aborted by user
+            }
+
+            errorLevel = Fill_Zone( zoneContainer );
+
+            if( errorLevel && !aVerbose )
+                break;
         }
 
-        errorLevel = Fill_Zone( zoneContainer );
+        if( progressDialog )
+            progressDialog->Update( progressCount, _( "Calculate copper pour connections..." ) );
 
-        if( errorLevel && !aVerbose )
-            break;
+        //Via Stitching: Recalclate vias zones connections after fill. 
+        n? GetBoard()->ViaStitching()->SetNetcodes() : GetBoard()->ViaStitching()->ConnectThermalViasToZones();
     }
+    Compile_Ratsnest( nullptr, false );
 
     if( progressDialog )
     {
-        progressDialog->Update( ii+2, _( "Updating ratsnest..." ) );
+        //progressDialog->Update( ii+2, _( "Updating ratsnest..." ) );
+        progressDialog->Update( progressCount, _( "Updating ratsnest..." ) );
 #ifdef __WXMAC__
         // Work around a dialog z-order issue on OS X
         aActiveWindow->Raise();

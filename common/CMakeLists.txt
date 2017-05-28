@@ -400,6 +400,32 @@ set( PCB_COMMON_SRCS
     pcb_keywords.cpp
     ../pcbnew/pcb_parser.cpp
     fp_lib_table.cpp
+
+	../pcbnew/trackitems/tracknodeitem.cpp
+        ../pcbnew/trackitems/tracknodeitems_common.cpp
+
+        ../pcbnew/trackitems/teardrop.cpp
+        ../pcbnew/trackitems/teardrops_common.cpp
+        ../pcbnew/trackitems/teardrops_common_commit.cpp
+        ../pcbnew/trackitems/teardrops_common_edit.cpp
+        ../pcbnew/trackitems/teardrops_common_todolist.cpp
+        ../pcbnew/trackitems/teardrops_common_menus.cpp
+        ../pcbnew/trackitems/teardrops_common_misc.cpp
+        ../pcbnew/trackitems/teardrops_common_plugin_parse.cpp
+
+        ../pcbnew/trackitems/roundedcornertrack.cpp
+        ../pcbnew/trackitems/roundedtrackscorner.cpp
+        ../pcbnew/trackitems/roundedtrackscorners_common.cpp
+        ../pcbnew/trackitems/roundedtrackscorners_common_commit.cpp
+        ../pcbnew/trackitems/roundedtrackscorners_common_edit.cpp
+        ../pcbnew/trackitems/roundedtrackscorners_common_menus.cpp
+        ../pcbnew/trackitems/roundedtrackscorners_common_misc.cpp
+        ../pcbnew/trackitems/roundedtrackscorners_common_plugin_parse.cpp
+        ../pcbnew/trackitems/roundedtrackscorners_common_todolist.cpp
+
+        ../pcbnew/trackitems/trackitems_common.cpp
+
+        ../pcbnew/trackitems/viastitching_common.cpp
 )
 
 set( PCB_COMMON_SRCS
@@ -407,6 +433,10 @@ set( PCB_COMMON_SRCS
     ../pcbnew/pcb_painter.cpp
     )
 
+    set( PCB_COMMON_SRCS
+        ${PCB_COMMON_SRCS}
+    )
+    
 # add -DPCBNEW to compilation of these PCBNEW sources
 set_source_files_properties( ${PCB_COMMON_SRCS} PROPERTIES
     COMPILE_DEFINITIONS "PCBNEW"

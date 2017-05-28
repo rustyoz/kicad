@@ -54,6 +54,9 @@ typedef void ( *END_MOUSE_CAPTURE_CALLBACK )( EDA_DRAW_PANEL* aPanel, wxDC* aDC 
 
 class EDA_DRAW_PANEL : public wxScrolledWindow
 {
+public:
+    void IgnoreNextLeftButtonRelease( void ) { m_ignoreNextLeftButtonRelease = true; }
+
 private:
     int     m_currentCursor;                ///< Current mouse cursor shape id.
     int     m_defaultCursor;                ///< The default mouse cursor shape id.

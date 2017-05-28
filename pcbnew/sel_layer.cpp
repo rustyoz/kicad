@@ -301,6 +301,9 @@ void PCB_BASE_FRAME::SelectCopperLayerPair()
                                 _( "Warning: The Top Layer and Bottom Layer are same." ) );
     }
 
+    //Via Stitching for.
+    SetActiveLayer( screen->m_Route_Layer_TOP );
+
     m_canvas->MoveCursorToCrossHair();
 }
 

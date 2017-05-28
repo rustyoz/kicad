@@ -46,6 +46,7 @@
 
 #include <wx/overlay.h>
 
+#include "trackitems/trackitems.h"
 
 // Local functions:
 /* Trace the pads of a module in sketch mode.
@@ -154,8 +155,13 @@ void BOARD::Draw( EDA_DRAW_PANEL* aPanel, wxDC* DC, GR_DRAWMODE aDrawMode, const
         if( track->IsMoving() )
             continue;
 
+        //Draw only track segments. Draw vias later... after zones.
+        if( track->Type() != PCB_VIA_T ) 
         track->Draw( aPanel, DC, aDrawMode );
     }
+
+    if(TrackNodeItem::ROUNDEDTRACKSCORNER* cor = TrackItems()->RoundedTracksCorners()->GetEditCorner())
+        cor->Draw( aPanel, DC, aDrawMode );
 
     // SEGZONE is outdated, only her for compatibility with
     // very old designs
@@ -200,6 +206,12 @@ void BOARD::Draw( EDA_DRAW_PANEL* aPanel, wxDC* DC, GR_DRAWMODE aDrawMode, const
             zone->DrawFilledArea( aPanel, DC, aDrawMode );
         }
     }
+
+    //... draw vias here. 
+    for( TRACK* track = m_Track; track; track = track->Next() )
+        if( !track->IsMoving() )
+            if( track->Type() == PCB_VIA_T )
+                track->Draw( aPanel, DC, aDrawMode );
 
     LSET all_cu = LSET::AllCuMask();
 
@@ -278,12 +290,14 @@ void BOARD::DrawHighLight( EDA_DRAW_PANEL* am_canvas, wxDC* DC, int aNetCode )
 
     // Redraw track and vias that have aNetCode
     for( TRACK* seg = m_Track; seg; seg = seg->Next() )
-    {
         if( seg->GetNetCode() == aNetCode )
-        {
-            seg->Draw( am_canvas, DC, draw_mode );
-        }
-    }
+            if( seg->Type() != PCB_VIA_T )
+                seg->Draw( am_canvas, DC, draw_mode );
+    // Draw vias after segments.
+    for( TRACK* seg = m_Track; seg; seg = seg->Next() )
+        if( seg->GetNetCode() == aNetCode )
+            if( seg->Type() == PCB_VIA_T )
+                seg->Draw( am_canvas, DC, draw_mode );
 }
 
 

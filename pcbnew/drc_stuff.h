@@ -31,6 +31,7 @@
 
 #include <vector>
 #include <memory>
+#include <wxBasePcbFrame.h>
 
 #define OK_DRC  0
 #define BAD_DRC 1
@@ -84,6 +85,43 @@
 #define DRCE_MISSING_COURTYARD_IN_FOOTPRINT    45   ///< footprint has no courtyard defined
 #define DRCE_MALFORMED_COURTYARD_IN_FOOTPRINT  46   ///< footprint has a courtyard but malformed
                                                     ///< (not convetrible to polygon)
+
+//Teardrop Errors
+#define DRCE_TEARDROP_NEAR_TEARDROP         500
+#define DRCE_TEARDROP_NEAR_TRACK            501
+#define DRCE_TEARDROP_NEAR_VIA              502
+#define DRCE_TEARDROP_NEAR_PAD              503
+#define DRCE_TEARDROP_TOO_SMALL             504
+#define DRCE_JUNCTION_NEAR_TRACK            505
+#define DRCE_JUNCTION_NEAR_VIA              506
+#define DRCE_JUNCTION_NEAR_PAD              507
+#define DRCE_JUNCTION_NEAR_TEARDROP         508
+#define DRCE_JUNCTION_NEAR_JUNCTION         509
+#define DRCE_JUNCTION_TOO_SMALL             510
+#define DRCE_TEARDROP_NOT_IN_PAD            511
+#define DRCE_TEARDROP_NOT_IN_VIA            512
+#define DRCE_TEARDOPS_MULTIPLE              513
+#define DRCE_TEARDROP_TRACK_ERROR           514
+#define DRCE_TJUNCTION_TRACK_SEGS_LENGTH    515
+#define DRCE_TEARDROP_INSIDE_TEXT           516
+#define DRCE_JUNCTION_INSIDE_TEXT           517
+
+//Teardrop warnings and  markings. 
+#define DRCE_TEARDROP_TRIMMED               551     
+#define DRCE_TEARDROP_BIG                   552
+#define DRCE_TEARDROP_MISSING               553
+#define DRCE_TJUNCTION_MISSING              554
+#define DRCE_JUNCTION_MISSING               555
+#define DRCE_TEARDROP_USELESS               556  
+#define DRCE_TEARDROP_IMPOSSIBLE            557
+#define DRCE_JUNCTION_TRACK_SEGS_WIDTH      558
+#define DRCE_TJUNCTION_ANGLE                559
+#define DRCE_TEARDROPS_INSIDE               560     
+
+#define DRCE_TRACKNODEITEM_UNSPECIFIED      600
+
+#define DRCE_THERMAL_VIA_UNCONNECTED        650   ///< Thermal Via unconnected
+#define DRCE_THERMAL_VIA_CONNECTED_POURS    651   ///< Thermal Via too less zones connected
 
 
 class EDA_DRAW_PANEL;
@@ -158,6 +196,8 @@ typedef std::vector<DRC_ITEM*> DRC_LIST;
 class DRC
 {
     friend class DIALOG_DRC_CONTROL;
+    friend class TEARDROPS;
+    friend class ROUNDEDTRACKSCORNERS;
 
 private:
 
@@ -398,7 +438,10 @@ private:
      * @return bool - true if distance >= radius, else
      *                false when distance < aRadius
      */
-    static bool checkMarginToCircle( wxPoint aCentre, int aRadius, int aLength );
+
+public:
+    bool checkMarginToCircle( wxPoint aCentre, int aRadius, int aLength );
+private:
 
 
     /**
@@ -536,6 +579,7 @@ public:
         return m_currentMarker;
     }
 
+    void AddMarker( const BOARD_CONNECTED_ITEM* aItem, const wxPoint aMarkerPos, const int aErrorCode, MARKER_PCB* aFillMarker );
 };
 
 

@@ -209,3 +209,21 @@ zone_clearance
 zone_connect
 zone_type
 zones
+
+#PCBNEW_WITH_TRACKITEMS
+#Teardrops
+teardrop
+position
+shape
+length_ratio
+width_ratio
+segments
+parameters
+junction
+
+#Stitch VIA
+thermal
+
+#Rounded Tracks Corners
+roundedtrackscorner
+length_set

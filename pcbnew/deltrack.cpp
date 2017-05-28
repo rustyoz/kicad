@@ -41,6 +41,8 @@
 #include <pcbnew.h>
 #include <protos.h>
 
+#include "trackitems/trackitems.h"
+
 
 TRACK* PCB_EDIT_FRAME::Delete_Segment( wxDC* DC, TRACK* aTrack )
 {
@@ -120,6 +122,11 @@ TRACK* PCB_EDIT_FRAME::Delete_Segment( wxDC* DC, TRACK* aTrack )
 
     int netcode = aTrack->GetNetCode();
 
+    PICKED_ITEMS_LIST pickedItems;
+    ITEM_PICKER       picker( NULL, UR_DELETED );
+    GetBoard()->TrackItems()->Teardrops()->Remove( aTrack, &pickedItems, true );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Remove( aTrack, &pickedItems, true );
+    
     // Remove the segment from list, but do not delete it (it will be stored i n undo list)
     GetBoard()->Remove( aTrack );
 
@@ -128,7 +135,9 @@ TRACK* PCB_EDIT_FRAME::Delete_Segment( wxDC* DC, TRACK* aTrack )
     // redraw the area where the track was
     m_canvas->RefreshDrawingRect( aTrack->GetBoundingBox() );
 
-    SaveCopyInUndoList( aTrack, UR_DELETED );
+    picker.SetItem( aTrack );
+    pickedItems.PushItem( picker );
+    SaveCopyInUndoList( pickedItems, UR_DELETED );
     OnModify();
     TestNetConnection( DC, netcode );
     SetMsgPanel( GetBoard() );
@@ -161,6 +170,10 @@ void PCB_EDIT_FRAME::Delete_net( wxDC* DC, TRACK* aTrack )
     ITEM_PICKER       picker( NULL, UR_DELETED );
     int    netcode = aTrack->GetNetCode();
 
+    //Delete teardrops at this net code.
+    GetBoard()->TrackItems()->Teardrops()->Remove( netcode, TEARDROPS::ALL_TYPES_T, &itemsList, true);
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Remove( netcode, &itemsList, true );
+
     /* Search the first item for the given net code */
     TRACK* trackList = GetBoard()->m_Track->GetStartNetCode( netcode );
 
@@ -173,6 +186,10 @@ void PCB_EDIT_FRAME::Delete_net( wxDC* DC, TRACK* aTrack )
         if( segm->GetNetCode() != netcode )
             break;
 
+        //Not stitch vias
+        if(segm && dynamic_cast<VIA*>(segm))
+            if( dynamic_cast<VIA*>(segm)->GetThermalCode() )
+                continue;
         GetBoard()->GetRatsnest()->Remove( segm );
         GetBoard()->m_Track.Remove( segm );
 
@@ -196,15 +213,19 @@ void PCB_EDIT_FRAME::Remove_One_Track( wxDC* DC, TRACK* pt_segm )
     if( pt_segm == NULL )
         return;
 
+    int net_code = pt_segm->GetNetCode();
+    PICKED_ITEMS_LIST itemsList;
+    ITEM_PICKER       picker( NULL, UR_DELETED );
+    //Delete teardrops from whole net. 
+    GetBoard()->TrackItems()->Teardrops()->Remove( net_code, TEARDROPS::ALL_TYPES_T, &itemsList, true);
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Remove( net_code, &itemsList, true );
+
     TRACK* trackList = GetBoard()->MarkTrace( pt_segm, &segments_to_delete_count,
                                               NULL, NULL, true );
 
     if( segments_to_delete_count == 0 )
         return;
 
-    int net_code = pt_segm->GetNetCode();
-    PICKED_ITEMS_LIST itemsList;
-    ITEM_PICKER       picker( NULL, UR_DELETED );
 
     int               ii = 0;
     TRACK*            tracksegment = trackList;
@@ -228,6 +249,10 @@ void PCB_EDIT_FRAME::Remove_One_Track( wxDC* DC, TRACK* pt_segm )
         itemsList.PushItem( picker );
     }
 
+    //Add teardrops back those net tracks witch where not deleted.
+    GetBoard()->TrackItems()->Teardrops()->Recreate( net_code, &itemsList );
+    GetBoard()->TrackItems()->RoundedTracksCorners()->Recreate( net_code, &itemsList );
+    
     SaveCopyInUndoList( itemsList, UR_DELETED );
 
     if( net_code > 0 )

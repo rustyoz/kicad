@@ -50,6 +50,8 @@
 #include <boost/ptr_container/ptr_map.hpp>
 #include <memory.h>
 
+#include "trackitems/trackitems.h"
+
 using namespace PCB_KEYS_T;
 
 #define FMTIU        BOARD_ITEM::FormatInternalUnits
@@ -506,6 +508,10 @@ void PCB_IO::Format( BOARD_ITEM* aItem, int aNestLevel ) const
         format( static_cast<ZONE_CONTAINER*>( aItem ), aNestLevel );
         break;
 
+    case PCB_TEARDROP_T:
+    case PCB_ROUNDEDTRACKSCORNER_T:
+        break;
+
     default:
         wxFAIL_MSG( wxT( "Cannot format item " ) + aItem->GetClass() );
     }
@@ -780,6 +786,9 @@ void PCB_IO::format( BOARD* aBoard, int aNestLevel ) const
     // Save the polygon (which are the newer technology) zones.
     for( int i = 0; i < aBoard->GetAreaCount();  ++i )
         Format( aBoard->GetArea( i ), aNestLevel );
+
+    aBoard->TrackItems()->RoundedTracksCorners()->Format( m_out, aNestLevel ); 
+    aBoard->TrackItems()->Teardrops()->Format( m_out, aNestLevel ); 
 }
 
 
@@ -1480,6 +1489,9 @@ void PCB_IO::format( TRACK* aTrack, int aNestLevel ) const
         default:
             THROW_IO_ERROR( wxString::Format( _( "unknown via type %d"  ), via->GetViaType() ) );
         }
+
+        if( via->GetThermalCode() )
+            m_out->Print( 0, " thermal" );
 
         m_out->Print( 0, " (at %s) (size %s)",
                       FMT_IU( aTrack->GetStart() ).c_str(),

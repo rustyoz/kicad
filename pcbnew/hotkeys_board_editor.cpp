@@ -372,9 +372,13 @@ bool PCB_EDIT_FRAME::OnHotKey( wxDC* aDC, int aHotkeyCode, const wxPoint& aPosit
 
         if( !itemCurrentlyEdited ) // no track in progress: switch layer only
         {
-            Other_Layer_Route( NULL, aDC );
-            if( displ_opts->m_ContrastModeDisplay )
-                m_canvas->Refresh();
+            //Add thermal via.
+            if( GetToolId() == ID_TRACK_BUTT )
+            {
+                evt_type = hk_id == HK_ADD_BLIND_BURIED_VIA ?
+                ID_POPUP_PCB_PLACE_ZONE_BLIND_BURIED_VIA : ID_POPUP_PCB_PLACE_ZONE_THROUGH_VIA;
+                break;
+            }
             break;
         }
 
@@ -395,7 +399,18 @@ bool PCB_EDIT_FRAME::OnHotKey( wxDC* aDC, int aHotkeyCode, const wxPoint& aPosit
     case HK_SEL_LAYER_AND_ADD_BLIND_BURIED_VIA:
         if( GetCurItem() == NULL || !GetCurItem()->IsNew() ||
             GetCurItem()->Type() != PCB_TRACE_T )
+        {
+            //Add thermal via with selecting layer(s)(net).
+            if( GetToolId() == ID_TRACK_BUTT )
+            {
+                evt_type = hk_id == HK_SEL_LAYER_AND_ADD_BLIND_BURIED_VIA ?
+                    ID_POPUP_PCB_SEL_LAYERS_AND_PLACE_ZONE_BLIND_BURIED_VIA : 
+                    ID_POPUP_PCB_SEL_LAYER_AND_PLACE_ZONE_THROUGH_VIA;
+
+                break;
+            }
             break;
+        }
 
         evt_type = hk_id == HK_SEL_LAYER_AND_ADD_BLIND_BURIED_VIA ?
             ID_POPUP_PCB_SELECT_CU_LAYER_AND_PLACE_BLIND_BURIED_VIA :
@@ -502,6 +517,11 @@ bool PCB_EDIT_FRAME::OnHotKey( wxDC* aDC, int aHotkeyCode, const wxPoint& aPosit
     case HK_ZONE_REMOVE_FILLED:
         evt_type = ID_POPUP_PCB_REMOVE_FILLED_AREAS_IN_ALL_ZONES;
         break;
+
+    case HK_GOTO_NEXT_MARKER:
+        evt_type = ID_POPUP_PCB_GOTO_NEXT_MARKER;
+        break;
+
     }
 
     if( evt_type != 0 )
@@ -1074,11 +1094,15 @@ bool PCB_EDIT_FRAME::OnHotkeyDuplicateOrArrayItem( int aIdCommand )
     case PCB_ZONE_AREA_T:
     case PCB_TARGET_T:
     case PCB_DIMENSION_T:
+    case PCB_VIA_T:
         switch( aIdCommand )
         {
         case HK_CREATE_ARRAY:
             if( canDuplicate )
                 evt_type = ID_POPUP_PCB_CREATE_ARRAY;
+            if( canDuplicate )
+                if(item->Type() == PCB_VIA_T)
+                    evt_type = ID_POPUP_PCB_CREATE_VIA_ARRAY;
             break;
 
         case HK_DUPLICATE_ITEM_AND_INCREMENT:

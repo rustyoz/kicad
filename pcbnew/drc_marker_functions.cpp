@@ -44,6 +44,11 @@
 #include <class_zone.h>
 #include <class_marker_pcb.h>
 #include <class_pcb_text.h>
+#include <class_board.h>
+#include <wxPcbStruct.h>
+#include <view/view.h>
+
+#include "trackitems/teardrops.h"
 
 
 MARKER_PCB* DRC::fillMarker( const TRACK* aTrack, BOARD_ITEM* aItem, int aErrorCode,
@@ -66,6 +71,11 @@ MARKER_PCB* DRC::fillMarker( const TRACK* aTrack, BOARD_ITEM* aItem, int aErrorC
         else if( aItem->Type() == PCB_VIA_T )
         {
             posB = position = ((VIA*)aItem)->GetPosition();
+        }
+        else if( aItem->Type() == PCB_TEARDROP_T )
+        {
+            //Sometimes this show wrong end of track segment. But nothing else to use.
+            posB = position = static_cast<TrackNodeItem::TEARDROP*>(aItem)->GetPosition();
         }
         else if( aItem->Type() == PCB_TRACE_T )
         {
@@ -237,3 +247,24 @@ MARKER_PCB* DRC::fillMarker( const wxPoint& aPos, int aErrorCode, const wxString
     return fillMe;
 }
 
+void DRC::AddMarker( const BOARD_CONNECTED_ITEM* aItem, const wxPoint aMarkerPos, const int aErrorCode, MARKER_PCB* aFillMarker )
+{
+    if( aItem )
+    {
+        if( aFillMarker )
+            aFillMarker ->SetData( aErrorCode, aMarkerPos, aItem->GetSelectMenuText(), aItem->GetPosition() );
+        else
+        {
+            aFillMarker = new MARKER_PCB( aErrorCode, aMarkerPos, aItem->GetSelectMenuText(), aItem->GetPosition() );
+            aFillMarker->SetItem( aItem );
+        }
+
+        if( aFillMarker )
+        {
+            wxASSERT( aFillMarker );
+            m_pcb->Add( aFillMarker );
+            m_pcbEditorFrame->GetGalCanvas()->GetView()->Add( static_cast<BOARD_ITEM*>( aFillMarker ) );
+            aFillMarker = 0;
+        }
+    }
+}

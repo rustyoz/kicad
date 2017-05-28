@@ -60,6 +60,11 @@ int D_PAD::m_PadSketchModePenSize = 0;      // Pen size used to draw pads in ske
 D_PAD::D_PAD( MODULE* parent ) :
     BOARD_CONNECTED_ITEM( parent, PCB_PAD_T )
 {
+    if(parent && (parent->Type() == PCB_MODULE_T))
+        m_id_number = parent->GetAndAddPadIDCounter(); //ID counter is in MODULE.
+    else
+        m_id_number = -1;   //No parent.
+    
     m_NumPadName          = 0;
     m_Size.x = m_Size.y   = Mils2iu( 60 );  // Default pad size 60 mils.
     m_Drill.x = m_Drill.y = Mils2iu( 30 );  // Default drill size 30 mils.
@@ -91,6 +96,16 @@ D_PAD::D_PAD( MODULE* parent ) :
     SetSubRatsnest( 0 );                       // used in ratsnest calculations
 
     m_boundingRadius      = -1;
+}
+
+
+//To set PAD id number when parse.
+void D_PAD::SetParent( EDA_ITEM* aParent )
+{
+    if( m_id_number == -1 )
+        if( aParent && ( aParent->Type() == PCB_MODULE_T ) )
+            m_id_number = dynamic_cast<MODULE*>(aParent)->GetAndAddPadIDCounter();    
+    BOARD_CONNECTED_ITEM::SetParent( aParent );
 }
 
 

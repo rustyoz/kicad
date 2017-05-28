@@ -57,6 +57,7 @@ public:
     }
 
     ROUTER* Router() const;
+    ITEM* GetStartItem( void ) const { return m_startItem; }
 
 protected:
     const VECTOR2I snapToItem( bool aEnabled, ITEM* aItem, VECTOR2I aP);
