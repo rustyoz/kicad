@@ -30,10 +30,10 @@
 #define  WXPCB_STRUCT_H_
 
 
-#include <pcb_base_edit_frame.h>
-#include <config_params.h>
-#include <class_undoredo_container.h>
-#include <zones.h>
+#include "pcb_base_edit_frame.h"
+#include "config_params.h"
+#include "class_undoredo_container.h"
+#include "zones.h"
 
 
 /*  Forward declarations of classes. */
@@ -868,6 +868,12 @@ public:
     bool AppendBoardFile( const wxString& aFullFileName, int aCtl );
 
     /**
+     * Function ImportFile
+     * import a board file and sets file path to current project path.
+     */
+    bool ImportFile( const wxString aFileName) override;
+
+    /**
      * Function SavePcbFile
      * writes the board data structures to \a a aFileName
      * Creates backup when requested and update flags (modified and saved flgs)
@@ -1549,7 +1555,7 @@ public:
                          bool             aDeleteExtraFootprints,
                          bool             aSelectByTimestamp,
                          bool             aDeleteSinglePadNets,
-                         bool             aIsDryRun );
+                         bool             aIsDryRun ) override;
 
     /**
      * Function RemoveMisConnectedTracks
