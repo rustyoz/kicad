@@ -1253,6 +1253,7 @@ void EAGLE_PLUGIN::packageWire( MODULE* aModule, wxXmlNode* aTree ) const
 
         dwg->SetLayer( layer );
         dwg->SetWidth( width );
+        dwg->SetDrawCoord();
 
         aModule->GraphicalItemsList().PushBack( dwg );
     //}
@@ -1458,31 +1459,28 @@ void EAGLE_PLUGIN::packageRectangle( MODULE* aModule, wxXmlNode* aTree ) const
     ERECT        r( aTree );
     PCB_LAYER_ID layer = kicad_layer( r.layer );
 
-    if( IsNonCopperLayer( layer ) )  // skip copper "package.rectangle"s
-    {
-        EDGE_MODULE* dwg = new EDGE_MODULE( aModule, S_POLYGON );
-        aModule->GraphicalItemsList().PushBack( dwg );
+    EDGE_MODULE* dwg = new EDGE_MODULE( aModule, S_POLYGON );
+    aModule->GraphicalItemsList().PushBack( dwg );
 
-        dwg->SetLayer( layer );
-        dwg->SetWidth( 0 );
+    dwg->SetLayer( layer );
+    dwg->SetWidth( 0 );
 
-        dwg->SetTimeStamp( timeStamp( aTree ) );
+    dwg->SetTimeStamp( timeStamp( aTree ) );
 
-        std::vector<wxPoint> pts;
+    std::vector<wxPoint> pts;
 
-        wxPoint start( wxPoint( kicad_x( r.x1 ), kicad_y( r.y1 ) ) );
-        wxPoint end(   wxPoint( kicad_x( r.x1 ), kicad_y( r.y2 ) ) );
+    wxPoint start( wxPoint( kicad_x( r.x1 ), kicad_y( r.y1 ) ) );
+    wxPoint end(   wxPoint( kicad_x( r.x1 ), kicad_y( r.y2 ) ) );
 
-        pts.push_back( start );
-        pts.push_back( wxPoint( kicad_x( r.x2 ), kicad_y( r.y1 ) ) );
-        pts.push_back( wxPoint( kicad_x( r.x2 ), kicad_y( r.y2 ) ) );
-        pts.push_back( end );
+    pts.push_back( start );
+    pts.push_back( wxPoint( kicad_x( r.x2 ), kicad_y( r.y1 ) ) );
+    pts.push_back( wxPoint( kicad_x( r.x2 ), kicad_y( r.y2 ) ) );
+    pts.push_back( end );
 
-        dwg->SetPolyPoints( pts );
+    dwg->SetPolyPoints( pts );
 
-        dwg->SetStart0( start );
-        dwg->SetEnd0( end );
-    }
+    dwg->SetStart0( start );
+    dwg->SetEnd0( end );
 }
 
 
@@ -1491,53 +1489,53 @@ void EAGLE_PLUGIN::packagePolygon( MODULE* aModule, wxXmlNode* aTree ) const
     EPOLYGON    p( aTree );
     PCB_LAYER_ID    layer = kicad_layer( p.layer );
 
-    if( IsNonCopperLayer( layer ) )  // skip copper "package.rectangle"s
+
+    EDGE_MODULE* dwg = new EDGE_MODULE( aModule, S_POLYGON );
+    aModule->GraphicalItemsList().PushBack( dwg );
+
+    dwg->SetWidth( 0 );     // it's filled, no need for boundary width
+
+    /*
+    switch( layer )
     {
-        EDGE_MODULE* dwg = new EDGE_MODULE( aModule, S_POLYGON );
-        aModule->GraphicalItemsList().PushBack( dwg );
+    case Eco1_User:    layer = F_SilkS; break;
+    case Eco2_User:    layer = B_SilkS;  break;
 
-        dwg->SetWidth( 0 );     // it's filled, no need for boundary width
-
-        /*
-        switch( layer )
-        {
-        case Eco1_User:    layer = F_SilkS; break;
-        case Eco2_User:    layer = B_SilkS;  break;
-
-        // all MODULE templates (created from eagle packages) are on front layer
-        // until cloned.
-        case Cmts_User: layer = F_SilkS; break;
-        }
-        */
-
-        dwg->SetLayer( layer );
-
-        dwg->SetTimeStamp( timeStamp( aTree ) );
-
-        std::vector<wxPoint> pts;
-        // TODO: I think there's no way to know a priori the number of children in wxXmlNode :()
-        // pts.reserve( aTree.size() );
-
-        // Get the first vertex and iterate
-        wxXmlNode* vertex = aTree->GetChildren();
-
-        while( vertex )
-        {
-            if( vertex->GetName() != "vertex" )     // skip <xmlattr> node
-                continue;
-
-            EVERTEX v( vertex );
-
-            pts.push_back( wxPoint( kicad_x( v.x ), kicad_y( v.y ) ) );
-
-            vertex = vertex->GetNext();
-        }
-
-        dwg->SetPolyPoints( pts );
-
-        dwg->SetStart0( *pts.begin() );
-        dwg->SetEnd0( pts.back() );
+    // all MODULE templates (created from eagle packages) are on front layer
+    // until cloned.
+    case Cmts_User: layer = F_SilkS; break;
     }
+    */
+
+    dwg->SetLayer( layer );
+
+    dwg->SetTimeStamp( timeStamp( aTree ) );
+
+    std::vector<wxPoint> pts;
+    // TODO: I think there's no way to know a priori the number of children in wxXmlNode :()
+    // pts.reserve( aTree.size() );
+
+    // Get the first vertex and iterate
+    wxXmlNode* vertex = aTree->GetChildren();
+
+    while( vertex )
+    {
+        if( vertex->GetName() != "vertex" )     // skip <xmlattr> node
+            continue;
+
+        EVERTEX v( vertex );
+
+        pts.push_back( wxPoint( kicad_x( v.x ), kicad_y( v.y ) ) );
+
+        vertex = vertex->GetNext();
+    }
+
+    dwg->SetPolyPoints( pts );
+
+    dwg->SetStart0( *pts.begin() );
+    dwg->SetEnd0( pts.back() );
+    dwg->SetDrawCoord();
+
 }
 
 
@@ -1567,6 +1565,7 @@ void EAGLE_PLUGIN::packageCircle( MODULE* aModule, wxXmlNode* aTree ) const
 
     gr->SetStart0( wxPoint( kicad_x( e.x ), kicad_y( e.y ) ) );
     gr->SetEnd0( wxPoint( kicad_x( e.x + e.radius ), kicad_y( e.y ) ) );
+    gr->SetDrawCoord();
 }
 
 
@@ -1952,8 +1951,8 @@ PCB_LAYER_ID EAGLE_PLUGIN::kicad_layer( int aEagleLayer ) const
         case EAGLE_LAYER::BPLACE:        kiLayer = B_SilkS;      break;
         case EAGLE_LAYER::TNAMES:        kiLayer = F_SilkS;      break;
         case EAGLE_LAYER::BNAMES:        kiLayer = B_SilkS;      break;
-        case EAGLE_LAYER::TVALUES:       kiLayer = F_SilkS;      break;
-        case EAGLE_LAYER::BVALUES:       kiLayer = B_SilkS;      break;
+        case EAGLE_LAYER::TVALUES:       kiLayer = F_Fab;        break;
+        case EAGLE_LAYER::BVALUES:       kiLayer = B_Fab;        break;
         case EAGLE_LAYER::TSTOP:         kiLayer = F_Mask;       break;
         case EAGLE_LAYER::BSTOP:         kiLayer = B_Mask;       break;
         case EAGLE_LAYER::TCREAM:        kiLayer = F_Paste;      break;
@@ -1962,7 +1961,7 @@ PCB_LAYER_ID EAGLE_PLUGIN::kicad_layer( int aEagleLayer ) const
         case EAGLE_LAYER::BFINISH:       kiLayer = B_Mask;       break;
         case EAGLE_LAYER::TGLUE:         kiLayer = F_Adhes;      break;
         case EAGLE_LAYER::BGLUE:         kiLayer = B_Adhes;      break;
-        case EAGLE_LAYER::DOCUMENT:      kiLayer = Cmts_User;    break;
+        case EAGLE_LAYER::DOCUMENT:      kiLayer = Dwgs_User;    break;
         case EAGLE_LAYER::REFERENCELC:   kiLayer = Cmts_User;    break;
         case EAGLE_LAYER::REFERENCELS:   kiLayer = Cmts_User;    break;
 
