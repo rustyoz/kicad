@@ -1174,6 +1174,8 @@ MODULE* EAGLE_PLUGIN::makeModule( wxXmlNode* aPackage, const string& aPkgName ) 
 
     m->SetFPID( LIB_ID( UTF8(aPkgName) ) );
 
+    //std::cout << aPkgName.ToStdString() << '\n';
+
     // Get the first package item and iterate
     wxXmlNode* packageItem = aPackage->GetChildren();
 
@@ -1220,8 +1222,11 @@ void EAGLE_PLUGIN::packageWire( MODULE* aModule, wxXmlNode* aTree ) const
     EWIRE        w( aTree );
     PCB_LAYER_ID layer = kicad_layer( w.layer );
 
-    if( IsNonCopperLayer( layer ) )     // only valid non-copper wires, skip copper package wires
-    {
+    std::cout << aModule->GetFPID().Format() << '\n';
+    std::cout << "wire layer " << w.layer << '\n';
+
+   // if( IsNonCopperLayer( layer ) )     // only valid non-copper wires, skip copper package wires
+    //{
         wxPoint start( kicad_x( w.x1 ), kicad_y( w.y1 ) );
         wxPoint end(   kicad_x( w.x2 ), kicad_y( w.y2 ) );
         int     width = kicad( w.width );
@@ -1250,7 +1255,7 @@ void EAGLE_PLUGIN::packageWire( MODULE* aModule, wxXmlNode* aTree ) const
         dwg->SetWidth( width );
 
         aModule->GraphicalItemsList().PushBack( dwg );
-    }
+    //}
 }
 
 
