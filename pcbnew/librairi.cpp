@@ -455,6 +455,7 @@ wxString PCB_BASE_EDIT_FRAME::CreateNewLibrary(const wxString& aLibName )
     if( aLibName.IsEmpty() )
     {
         DIALOG_SELECT_PRETTY_LIB dlg( this, initialPath );
+
         if( dlg.ShowModal() != wxID_OK )
             return wxEmptyString;
 
