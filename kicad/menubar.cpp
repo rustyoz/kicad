@@ -67,6 +67,7 @@ BEGIN_EVENT_TABLE( KICAD_MANAGER_FRAME, EDA_BASE_FRAME )
     EVT_MENU( ID_HELP_GET_INVOLVED, KICAD_MANAGER_FRAME::GetKicadContribute )
     EVT_MENU( wxID_ABOUT, KICAD_MANAGER_FRAME::GetKicadAbout )
     EVT_MENU( ID_IMPORT_EAGLE_PROJECT, KICAD_MANAGER_FRAME::OnImportEagleFiles )
+    EVT_MENU( ID_SAVE_AS_PROJECT, KICAD_MANAGER_FRAME::OnSaveAsProject )
 
     // Range menu events
     EVT_MENU_RANGE( ID_LANGUAGE_CHOICE, ID_LANGUAGE_CHOICE_END,
@@ -245,6 +246,12 @@ void KICAD_MANAGER_FRAME::ReCreateMenuBar()
     AddMenuItem( fileMenu, ID_LOAD_PROJECT, msg,
                  _( "Open an existing project" ),
                  KiBitmap( open_project_xpm ) );
+
+    AddMenuItem( fileMenu,
+                 ID_SAVE_AS_PROJECT,
+                 _( "&Save Project As..." ),
+                 _( "Save project under another name" ),
+                 KiBitmap( save_project_xpm ) );
 
     // File history
     openRecentMenu = new wxMenu();

@@ -124,6 +124,7 @@ enum id_kicad_frm {
     ID_READ_ZIP_ARCHIVE,
     ID_INIT_WATCHED_PATHS,
     ID_IMPORT_EAGLE_PROJECT,
+    ID_SAVE_AS_PROJECT,
 
     // Please, verify: the number of items in this list should be
     // less than ROOM_FOR_KICADMANAGER (see id.h)
@@ -199,6 +200,11 @@ public:
      *  Open dialog to import Eagle schematic and board files.
      */
     void OnImportEagleFiles( wxCommandEvent& event );
+
+    /**
+     *  Open dialog to save project under a new name.
+     */
+    void OnSaveAsProject( wxCommandEvent& event );
 
     /**
      * Displays \a aText in the text panel.

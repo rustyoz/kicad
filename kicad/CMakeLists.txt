@@ -28,6 +28,7 @@ set( KICAD_SRCS
     tree_project_frame.cpp
     treeprojectfiles.cpp
     treeproject_item.cpp
+    save_as_project.cpp
     )
 
 if( MINGW )
