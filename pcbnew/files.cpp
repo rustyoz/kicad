@@ -55,6 +55,7 @@
 
 #include <wx/stdpaths.h>
 
+class SCH_EDIT_FRAME;
 
 //#define     USE_INSTRUMENTATION     1
 #define     USE_INSTRUMENTATION     0
@@ -922,6 +923,41 @@ bool PCB_EDIT_FRAME::ImportFile( const wxString& aFileName, int aFileType )
                 }
             }
 
+            wxFileName netlist( newfilename );
+            netlist.SetExt( NetlistFileExtension );
+
+            if( netlist.FileExists() )
+            {
+                ReadPcbNetlist( netlist.GetFullPath(),
+                        wxEmptyString,
+                        NULL,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false );
+            }
+
+            for ( auto zone : GetBoard()->Zones() ){
+                wxString zoneNet = zone->GetNet()->GetNetname();
+
+                wxString localNet = "/"+zoneNet;
+                NETINFO_ITEM*   net = GetBoard()->FindNet( localNet );
+                if( net ) {
+                    zone->SetNetCode( net->GetNet() );
+                }
+            }
+
+            for( auto track : GetBoard()->Tracks() ){
+                wxString trackNet = track->GetNet()->GetNetname();
+
+                wxString localNet = "/"+trackNet;
+                NETINFO_ITEM*   net = GetBoard()->FindNet( localNet );
+                if( net ) {
+                    track->SetNetCode( net->GetNet() );
+                }
+            }
 
             return true;
         }

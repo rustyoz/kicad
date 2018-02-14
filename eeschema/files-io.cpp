@@ -36,6 +36,7 @@
 #include <pgm_base.h>
 #include <kiface_i.h>
 #include <richio.h>
+#include <netlist.h>
 
 #include <eeschema_id.h>
 #include <class_library.h>
@@ -762,6 +763,9 @@ bool SCH_EDIT_FRAME::ImportFile( const wxString& aFileName, int aFileType )
     SCH_SHEET_LIST sheetList( g_RootSheet );
     SCH_SCREENS schematic;
 
+    wxFileName netlist;
+
+
     switch( (SCH_IO_MGR::SCH_FILE_T) aFileType )
     {
         case SCH_IO_MGR::SCH_EAGLE:
@@ -827,6 +831,9 @@ bool SCH_EDIT_FRAME::ImportFile( const wxString& aFileName, int aFileType )
                 return false;
             }
 
+            netlist = newfilename;
+            netlist.SetExt( NetlistFileExtension );
+            CreateNetlist( NET_TYPE_PCBNEW, netlist.GetFullPath(), 0, NULL,  true );
             return true;
 
         default:

@@ -118,10 +118,8 @@ void KICAD_MANAGER_FRAME::OnImportEagleFiles( wxCommandEvent& event )
 
 
     wxFileName pcb( sch );
-    wxFileName netlist( pro );
     pro.SetExt( ProjectFileExtension );         // enforce extension
     pcb.SetExt( LegacyPcbFileExtension );       // enforce extension
-    netlist.SetExt( NetlistFileExtension );
 
     if( !pro.IsAbsolute() )
         pro.MakeAbsolute();
@@ -163,7 +161,6 @@ void KICAD_MANAGER_FRAME::OnImportEagleFiles( wxCommandEvent& event )
 
         schframe->Raise();
 
-        schframe->CreateNetlist( NET_TYPE_PCBNEW, netlist.GetFullPath(), 0, NULL,  true );
     }
 
     if( pcb.FileExists() )
@@ -199,18 +196,6 @@ void KICAD_MANAGER_FRAME::OnImportEagleFiles( wxCommandEvent& event )
 
         pcbframe->Raise();
 
-        if( netlist.FileExists() )
-        {
-            pcbframe->ReadPcbNetlist( netlist.GetFullPath(),
-                    wxEmptyString,
-                    NULL,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false,
-                    false );
-        }
     }
 
     ReCreateTreePrj();
