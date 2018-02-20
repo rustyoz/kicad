@@ -1,0 +1,11 @@
+dist: trusty
+sudo: true
+language: generic
+
+script:
+- sudo apt-get install git make asciidoc pandoc gettext po4a dblatex texlive-xetex fonts-vlgothic source-highlight texlive-lang-english texlive-lang-french texlive-lang-italian texlive-lang-japanese texlive-lang-polish texlive-lang-spanish texlive-lang-cyrillic texlive-lang-german bzr bzrtools build-essential cmake cmake-curses-gui debhelper doxygen grep libbz2-dev libcairo2-dev libglew-dev libglm-dev libssl-dev libwxgtk3.0-dev wget curl libcurl4-gnutls-dev libcurl4-openssl-dev libboost-all-dev
+- git clone https://github.com/rustyoz/kicad
+- mkdir build/release
+- cd build/release
+- cmake ~/kicad 
+- make
